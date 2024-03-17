@@ -3,9 +3,6 @@ id: urn:pcf-adr
 info:
   title: PCF ADR
   version: 1.4.0
-  externalDocs:
-    description: Wiki - PCF ADR Specification
-    url: https://wiki.ptin.corppt.com/display/PCFKERNEL/PCF+ADR+Specification+1.1
 defaultContentType: application/json
 
 servers:
@@ -13,245 +10,255 @@ servers:
     host: 'localhost:19092'
     protocol: kafka
 
-channels:
-  pcfADR:
-    address: pcfADR
-    messages:
-      ADR:
-        $ref: '#/components/messages/ADR'
-
 operations:
   publishADR:
     action: send
     channel:
       $ref: '#/channels/pcfADR'
 
-components:
-  messages:
-    ADR:
-      headers:
-        type: object
-        properties:
-          producerId:
-            description: Producer Id
-            type: string
-          recordTypeId:
-            description: Recorder Type Id
-            type: string
-          timestamp:
-            description: Date
-            type: string
-            format: date-time
-          validity:
-            description: Validity
-            type: integer
-            format: int32
-            minimum: 0
-      payload:
-        if:
+channels:
+  pcfADR:
+    address: pcfADR
+    messages:
+      ADR:
+        title: Activity Data Record
+        summary: An information record about an activity performed in the system.
+        description: >
+          <details>
+          <summary><u>ADR and LDR context:</u></summary>
+          LDR (Local Data Record) are local records created by each activity that occurs in the system with all the information arising from that activity. These records will contain a large amount of information in order to include resubmissions for correction and cancellation of actions.
+          <p>
+          Each system participates in diverse business processes with multiple activities (process = Σ activities).  Since each activity generates a LDR, different LDRs created by different systems are enforced to be correlative to group LDRs from the same business process.
+          <p>
+          ADR (Activity Data Record) are similar to LDRs. They are generated from LDRs and published externally, for third-party systems. While LDR are hardcoded in the own system (non-parameterizable), the structure of ADRs is decided by parameterization, via OMS (Operational & Maintenance System), with versioning.
+          </details>
+        externalDocs:
+          description: Wiki - PCF ADR Specification
+          url: https://wiki.ptin.corppt.com/display/PCFKERNEL/PCF+ADR+Specification+1.2
+        headers:
           type: object
           properties:
+            producerId:
+              description: Producer Id
+              type: string
+            recordTypeId:
+              description: Recorder Type Id
+              type: string
+            timestamp:
+              description: Date
+              type: string
+              format: date-time
+            validity:
+              description: Validity
+              type: integer
+              format: int32
+              minimum: 0
+        payload:
+          if:
+            type: object
+            properties:
+              version:
+                type: string
+                const: 1.2
+          then:
+            type: object
+            required:
+              - notifications
+            properties:
+              notifications:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+          description: The ADR definition.
+          required:
+            - id
+            - systemId
+            - version
+            - ldrId
+            - creationTs
+            - activityType
+            - activitySubType
+            - activityStartTs
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: >
+                Unique identifier of the ADR.\
+                
+                _Note:_ it is coincident to the source LDR identifier.
+              example: 2143ae4a-8f91-11ee-b9d1-0242ac120002
+            systemId:
+              type: string
+              description: System identifier. Useful on deployments, where there are multiple PCF systems.
+              example: MEOPCF
             version:
               type: string
-              const: 1.2
-        then:
-          type: object
-          required:
-            - notifications
-          properties:
-            notifications:
+              pattern: /^\d+.\d+$/
+              description: >
+                ADR global specification version, in the format: `<Major>.<minor>`.\
+                
+                When there are changes that do not break backward compatibility, the **minor** version will be increased, otherwise, the **Major**  version will be increased.
+              example: 1.1
+            creationTs:
+              type: string
+              description: >
+                LDR creation instant.\
+
+                _Note:_ <u>Not</u> the publish instant, <u>nor</u> the LDR to ADR transformation instant.
+              format: UTCZ
+              example: 2023-11-21T17:32:28Z
+            correlationId:
+              type: string
+              description: Identifier to associate this ADR with other records of other activities. Two ADRs from the same business process, but produced asynchronously in different activities/systems, can be associated.
+              example: corr-40710e14-8f16-11ee-b9d1-0242ac120002
+            productId:
+              type: string
+              description: >
+                Product identifier that subscribed to the service (aka agreement).
+
+                This subscription may have been made by a complementary product.
+              example: product-7463524
+            productOfferingId:
+              type: string
+              description: Commercial offer identifier.
+              example: 188c66ee-8f18-11ee-b9d1-0242ac120002
+            productAccountId:
+              type: string
+              description: >
+                Product account identifier related to the activity.
+                Useful for aggregating products, alarms, counters, etc.
+              example: ACC-12345
+            productAccountTimeZone:
+              type: string
+              pattern: /^[+-]\d{2}:\d{2}$/
+              description: Timezone associated to the product account (e.g. `+00:00`).
+              example: +00:00
+            billingAccountId:
+              type: string
+              description: >
+                The billing account identifier related to the activity. Specific for billing purposes only.
+              example: bill-acc-983625
+            protocolSessionId:
+              type: string
+              description: Protocol network session identifier.
+              example: Session-706ba8fc-f82d-48e7-84dd-af34127250c6
+            tecnhicalCommunicationId:
+              type: string
+              description: Public identifier of the equipment (e.g. MSISDN, IMSI, etc.) where the service was used.
+
+                - <u>Only</u> present in **service activity** records.
+
+                - <u>Does not</u> exist in **provision** records, **top-ups**, etc.
+
+
+                _Note:_ The way to obtain the value of this attribute must be deterministic and explicitly configured in the TC (at the _Service Criteria_ level).
+              example: 960000001
+            communicationProducts:
+              description: List of public identifiers of the product subscription. It <u>is not</u> present in **service activity** records.
               type: array
               items:
-                $ref: '#/components/schemas/Notification'
-        description: The ADR definition.
-        required:
-          - id
-          - systemId
-          - version
-          - ldrId
-          - creationTs
-          - activityType
-          - activitySubType
-          - activityStartTs
-        type: object
-        properties:
-          id:
-            type: string
-            format: uuid
-            description: >
-              Unique identifier of the ADR.\
-              
-              _Note:_ it is coincident to the source LDR identifier.
-            example: 2143ae4a-8f91-11ee-b9d1-0242ac120002
-          systemId:
-            type: string
-            description: System identifier. Useful on deployments, where there are multiple PCF systems.
-            example: MEOPCF
-          version:
-            type: string
-            pattern: /^\d+.\d+$/
-            description: >
-              ADR global specification version, in the format: `<Major>.<minor>`.\
-              
-              When there are changes that do not break backward compatibility, the **minor** version will be increased, otherwise, the **Major**  version will be increased.
-            example: 1.1
-          creationTs:
-            type: string
-            description: >
-              ADR creation instant.\
+                $ref: '#/components/schemas/CommunicationProduct'
+            activityId:
+              type: string
+              description: >
+                Activity identifier, generally. This field is used to associate segments of the same activity.
 
-              _Note:_ <u>Not</u> the publish instant.
-            format: UTCZ
-            example: 2023-11-21T17:32:28Z
-          correlationId:
-            type: string
-            description: Identifier to associate this ADR with other records of other activities.
-            example: corr-40710e14-8f16-11ee-b9d1-0242ac120002
-          productId:
-            type: string
-            description: >
-              Product identifier that subscribed to the service (aka agreement).
+                - In **session** scenarios, it is the session identifier.
 
-              This subscription may have been made by a complementary product.
-            example: product-7463524
-          productOfferingId:
-            type: string
-            description: Commercial offer identifier.
-            example: 188c66ee-8f18-11ee-b9d1-0242ac120002
-          productAccountId:
-            type: string
-            description: >
-              Product account identifier related to the activity.
-              Useful for aggregating products, alarms, counters, etc.
-            example: ACC-12345
-          productAccountTimeZone:
-            type: string
-            pattern: /^[+-]\d{2}:\d{2}$/
-            description: Timezone associated to the product account (e.g. `+00:00`).
-            example: +00:00
-          billingAccountId:
-            type: string
-            description: >
-              The billing account id related to the activity.
-              Specific for billing purposes only.
-            example: bill-acc-983625
-          protocolSessionId:
-            type: string
-            description: protocol network session id
-            example: Session-706ba8fc-f82d-48e7-84dd-af34127250c6
-          tecnhicalCommunicationId:
-            type: string
-            description: Public identifier of the equipment (e.g. MSISDN, IMSI, etc.) where the service was used.
+                - In **single event** scenarios, where there is no session (e.g., provisioning, top-ups), it is the event identifier.        
+              example: Req-bce51c6a-8f16-11ee-b9d1-0242ac120002
+            activityType:
+              type: string
+              description: Activity type (e.g. `PRV`, `policy N7`, `authorization N5`, `N28`).
+              example: PROVISIONING
+            activitySubType:
+              type: string
+              description: >
+                Activity subtype (e.g. for activity type `PRV`: `CREATE_ACCOUNT`, `CREATE_PRODUCT`, `UPDATE_ACCOUNT`, `UPDATE_PRODUCT`).
+              example: CREATE_PRODUCT
+            activityStartTs:
+              type: string
+              format: UTCZ
+              description: >
+                Activity start time instant (entire session).
 
-              - <u>Only</u> present in **service activity** records.
+                - In **session** scenarios, it is the beginning of the session. Intermediate records in a session (due to limit of consumption, time, or events) fill this field with the TS at the beginning of the session.
 
-              - <u>Does not</u> exist in **provision** records, **top-ups**, etc.
+                - In **single event** scenarios, it is the instant associated with the event.
+              example: 2023-11-21T17:32:28Z
+            activityEndTs:
+              type: string
+              format: UTCZ
+              description: >
+                Activity end time instant. This field is only filled in the last segment of this activity.
 
+                - In **session** scenarios, it is the end of the session. Intermediate records in a session (due to limit of consumption, time, or events) <u>do not</u> fill in this field.
 
-              _Note:_ The way to obtain the value of this attribute must be deterministic and explicitly configured in the TC (at the _Service Criteria_ level).
-            example: 960000001
-          communicationProducts:
-            description: List of public identifiers of the product subscription. It <u>is not</u> present in **service activity** records.
-            type: array
-            items:
-              $ref: '#/components/schemas/CommunicationProduct'
-          activityId:
-            type: string
-            description: >
-              Activity identifier, generally. This field is used to associate segments of the same activity.
+                - In **single event** scenarios, it is the instant associated with the event (i.e. equal to `activityStartTs`).
+              example: 2023-11-21T17:32:28Z
+            activityTimeZone:
+              type: string
+              pattern: /^[+-]\d{2}:\d{2}$/
+              description: Timezone associated to the activity (e.g. `+00:00`).
+              example: +01:00
+            activityBusinessResult:
+              type: object
+              description: Business result of the reported activity.
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  description: Activity result code (e.g. `OK`).
+                  example: OK
+                classification:
+                  type: string
+                  description: Activity result category.
+                  # Mas está identificado como String
+                  enum:
+                    - SUCCESS
+                    - CLIENT_ERROR
+            segmentNumber:
+              type: integer
+              minimum: 1
+              description: >
+                Index for the part (segment) of the activity to which the record refers.
 
-              - In **session** scenarios, it is the session identifier.
+                - In **session** scenarios, several intermediate records can be generated (limit of consumption, time, or events).
+              example: 1
+            segmentStartTs:
+              type: string
+              format: UTCZ
+              description: >
+                Instant of the activity associated with the beginning of the segment.
 
-              - In **single event** scenarios, where there is no session (e.g., provisioning, top-ups), it is the event identifier.        
-            example: Req-bce51c6a-8f16-11ee-b9d1-0242ac120002
-          activityType:
-            type: string
-            description: Activity type (e.g. `PRV`, `policy N7`, `authorization N5`, `N28`).
-            example: PROVISIONING
-          activitySubType:
-            type: string
-            description: >
-              Activity subtype (e.g. for activity type `PRV`: `CREATE_ACCOUNT`, `CREATE_PRODUCT`, `UPDATE_ACCOUNT`, `UPDATE_PRODUCT`).
-            example: CREATE_PRODUCT
-          activityStartTs:
-            type: string
-            format: UTCZ
-            description: >
-              Activity start time instant (entire session).
+                - In **session** scenarios, it is the instant associated with the beginning of the segment (at the beginning of the session, it is equal to `activityStartTs`).
 
-              - In **session** scenarios, it is the beginning of the session. Intermediate records in a session (due to limit of consumption, time, or events) fill this field with the TS at the beginning of the session.
+                - In **single event** scenarios, it is the instant associated with the event.
+              example: 2023-11-21T17:32:28Z
+            segmentEndTs:
+              type: string
+              format: UTCZ
+              description: >
+                Instant of the activity associated with the end of the segment.
 
-              - In **single event** scenarios, it is the instant associated with the event.
-            example: 2023-11-21T17:32:28Z
-          activityEndTs:
-            type: string
-            format: UTCZ
-            description: >
-              Activity end time instant. This field is only filled in the last segment of this activity.
+                - In **session** scenarios, it is the instant associated with the end of the segment (at the end of the session, the end of the segment is equal to `activityEndTs`).
 
-              - In **session** scenarios, it is the end of the session. Intermediate records in a session (due to limit of consumption, time, or events) <u>do not</u> fill in this field.
+                - In **single event** scenarios, it is the instant associated with the event.
+              example: 2023-11-21T17:32:28Z     
+            events:
+              type: array
+              description: List of events
+              items:
+                $ref: '#/components/schemas/Event'
+            provisioning:
+              $ref: '#/components/schemas/Provisioning'
+            policy:
+              $ref: '#/components/schemas/SMPolicyControl'
 
-              - In **single event** scenarios, it is the instant associated with the event (i.e. equal to `activityStartTs`).
-            example: 2023-11-21T17:32:28Z
-          activityTimeZone:
-            type: string
-            pattern: /^[+-]\d{2}:\d{2}$/
-            description: Timezone associated to the activity (e.g. `+00:00`).
-            example: +01:00
-          activityBusinessResult:
-            type: object
-            description: Business result of the reported activity.
-            required:
-              - code
-            properties:
-              code:
-                type: string
-                description: activity result code
-                example: OK
-              classification:
-                type: string
-                description: activity result category
-                enum:
-                  - SUCCESS
-                  - CLIENT_ERROR
-          segmentNumber:
-            type: integer
-            minimum: 1
-            description: >
-              Index for the part (segment) of the activity to which the record refers.
-
-              - In **session** scenarios, several intermediate records can be generated (limit of consumption, time, or events).
-            example: 1
-          segmentStartTs:
-            type: string
-            format: UTCZ
-            description: >
-              Instant of the activity associated with the beginning of the segment.
-
-              - In **session** scenarios, it is the instant associated with the beginning of the segment (at the beginning of the session, it is equal to `activityStartTs`).
-
-              - In **single event** scenarios, it is the instant associated with the event.
-            example: 2023-11-21T17:32:28Z
-          segmentEndTs:
-            type: string
-            format: UTCZ
-            description: >
-              Instant of the activity associated with the end of the segment.
-
-              - In **session** scenarios, it is the instant associated with the end of the segment (at the end of the session, the end of the segment is equal to `activityEndTs`).
-
-              - In **single event** scenarios, it is the instant associated with the event.
-            example: 2023-11-21T17:32:28Z     
-          events:
-            type: array
-            description: List of events
-            items:
-              $ref: '#/components/schemas/Event'
-          provisioning:
-            $ref: '#/components/schemas/Provisioning'
-          policy:
-            $ref: '#/components/schemas/SMPolicyControl'
-        
+components: 
   schemas:
     CommunicationProduct:
       type: object
@@ -279,28 +286,28 @@ components:
       properties:
         id:
           type: string
-          description: event id
+          description: Event identifier.
           example: 99ce7f3f-5ae9-458a-a02a-acafb2e2677c
         activityTs:
           type: string
           format: UTCZ
-          description: event activity date
+          description: Event activity instant.
           example: 2023-11-30T01:01:03.746Z
         arrivalTs:
           type: string
           format: UTCZ
-          description: event arrival/process instant
+          description: Event arrival/process instant.
           example: 2023-11-30T01:01:07.746Z
+        # Diferenças entre activityTs e arrivalTs
         eventType:
           type: string
-          description: Nature of event. E.g. Unique, Initial, Final, Intermediate, etc
+          description: Nature of event (e.g. `Unique`, `Initial`, `Final`, `Intermediate`, etc.).
           example: Unique
         eventPayload:
           type: object
           additionalProperties: true
           description: >
-            Internal representation of the network event that arrived at the system
-            converted by the protocol mapper.
+            Internal representation of the network event that arrived at the system converted by the Protocol Mapper.
           example:
             - id: 1
               activityTs: 2023-11-30T01:01:03.746Z
@@ -311,7 +318,7 @@ components:
     
     Provisioning:
       type: object
-      description: provisioning information
+      description: Provisioning information.
       required:
         - channel
         - subChannel
@@ -319,11 +326,11 @@ components:
       properties:
         channel:
           type: string
-          description: event channel
+          description: Event channel.
           example: Shop
         subChannel:
           type: string
-          description: event sub channel
+          description: Event subchannel.
           example: Web
         reason:
           type: object
@@ -338,7 +345,7 @@ components:
             description:
               type: string
               description: >
-                Reason description (e.g., balance adjustment due to customer complaint)
+                Reason description (e.g., balance adjustment due to customer complaint, account).
               example: Customer request
         items:
           type: array
@@ -376,13 +383,13 @@ components:
     
     SMPolicyControl:
       type: object
-      description: Service information associated with policy session N7 and N28
+      description: Service information associated with policy session N7 and N28.
       required:
         - sessionPart
       properties:
         sessionPart:
           type: array
-          description: list of session segments
+          description: List of session segments.
           items:
              $ref: '#/components/schemas/SessionPart'
     
@@ -398,7 +405,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ServicePolicy'
-        appliedElegibility:
+        appliedEligibility:
           $ref: '#/components/schemas/AppliedEligibility'
         appliedPCCRules:
           type: array
@@ -412,7 +419,7 @@ components:
             $ref: '#/components/schemas/AppliedSessionRule'
         policyCounters:
           type: array
-          description: Detailed information of policy counters used.
+          description: List of Policy Counters used.
           items:           
             $ref: '#/components/schemas/PolicyCounter'
     
@@ -422,22 +429,25 @@ components:
       properties:
         id:
           type: string
-          description: Top Level identification
+          description: Top Level unique identifier.
           example: tl-123465
         specId:
           type: string
-          description: Top Level specification id
+          description: Top Level specification identifier.
           example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
-        elegibilityPlans:
+        eligibilityPlans:
           type: array
+          description: List of executed Eligibility Plans.
           items:
-            $ref: '#/components/schemas/ElegibilityPlan'
+            $ref: '#/components/schemas/EligibilityPlan'
         sessionPlans:
           type: array
+          description: List of executed Session Plans.
           items:
             $ref: '#/components/schemas/SessionPlan'
         notificationPlans:
           type: array
+          description: List of executed Notification Plans.
           items:
             $ref: '#/components/schemas/NotificationPlan'
     
@@ -447,32 +457,34 @@ components:
       properties:
         id:
           type: string
-          description: Top Level identification
+          description: Top Level unique identifier.
           example: tl-123465
         specId:
           type: string
-          description: Top Level specification id
+          description: Top Level specification identifier.
           example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
         servicePlans:
           type: array
+          description: List of executed Service Plans.
           items:
             $ref: '#/components/schemas/SessionPlan'
         notificationPlans:
           type: array
+          description: List of executed Notification Plans.
           items:
             $ref: '#/components/schemas/NotificationPlan'
     
-    ElegibilityPlan:
+    EligibilityPlan:
       type: object
-      description: elegibility plan
+      description: eligibility plan
       properties:
         specId:
           type: string
-          description: Identification of the specification of the executed plan
+          description: Identification of the specification of the executed plan.
           example: 81455de9-46f8-4991-8f09-ff55eaa97039
         resultSpecId:
           type: string
-          description: Identification of plan specification result
+          description: Identification of plan specification result.
           example: 47761961-08ec-40b3-807f-5777a5d92c33
     
     SessionPlan:
@@ -481,13 +493,13 @@ components:
       properties:
         specId:
           type: string
-          description: Identification of the specification of the executed plan
+          description: Identification of the specification of the executed plan.
           example: 81455de9-46f8-4991-8f09-ff55eaa97039
         resultSpecIds:
           type: array
           items:
             type: string
-            description: Identification of plan specification result
+            description: Identification of plan specification result.
             example: 47761961-08ec-40b3-807f-5777a5d92c33
     
     ServicePlan:
@@ -502,7 +514,7 @@ components:
           type: array
           items:
             type: string
-            description: Identification of plan specification result
+            description: Identification of plan specification result.
             example: 47761961-08ec-40b3-807f-5777a5d92c33
     
     NotificationPlan:
@@ -517,28 +529,29 @@ components:
           type: array
           items:
             type: string
-            description: Identification of plan specification result
+            description: Identification of plan specification result.
             example: 47761961-08ec-40b3-807f-5777a5d92c33
     
     AppliedEligibility:
       type: object
-      description: applied eligibility
+      description: Applied eligibility.
       properties:
         result:
           type: boolean
-          description: Eligibility Result (true, false)
+          description: Eligibility result.
           example: true
         reason:
           type: string
-          description: eligibility reason
+          description: Eligibility reason.
           example: AUTHORIZED
     
     AppliedPCCRule:
       type: object
+      description: The PCC rules used. A PCC Rule is a rule associated with policies to define the control of the service (e.g., charging 64Kbps).
       properties:
         specId:
           type: string
-          description: Identifier of the applied PCC Rule specification
+          description: Identifier of the applied PCC Rule specification.
           example: 04bb4505-e880-496e-8aeb-260ff5728575
     
     AppliedSessionRule:
@@ -546,19 +559,20 @@ components:
       properties:
         specId:
           type: string
-          description: Identifier of the applied Session Rule specification
+          description: Identifier of the applied Session Rule specification.
           example: 04bb4505-e880-496e-8aeb-260ff5728575
     
     PolicyCounter:
       type: object
+      description: A Policy Counter is used to store any number relevant to the business (e.g., the number of Octets spent by the subscriber on a specific service).
       properties:
         id:
           type: string
-          description: Policy Counter Identifier
+          description: Policy Counter identifier.
           example: counter-12345
         value:
           type: string
-          description: Policy Counter value
+          description: Policy Counter value.
           example: "100"
     
     Notification:
