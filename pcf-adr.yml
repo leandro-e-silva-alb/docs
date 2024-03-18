@@ -95,7 +95,7 @@ channels:
               example: MEOPCF
             version:
               type: string
-              pattern: /^\d+.\d+$/
+              pattern: /^\d+\.\d+$/
               description: >
                 ADR global specification version, in the format: `<Major>.<minor>`.\
                 
@@ -133,7 +133,7 @@ channels:
             productAccountTimeZone:
               type: string
               pattern: /^[+-]\d{2}:\d{2}$/
-              description: Timezone associated to the product account (e.g. `+00:00`).
+              description: Timezone associated to the product account (e.g., `+00:00`).
               example: +00:00
             billingAccountId:
               type: string
@@ -146,7 +146,7 @@ channels:
               example: Session-706ba8fc-f82d-48e7-84dd-af34127250c6
             tecnhicalCommunicationId:
               type: string
-              description: Public identifier of the equipment (e.g. MSISDN, IMSI, etc.) where the service was used.
+              description: Public identifier of the equipment (e.g., MSISDN, IMSI, etc.) where the service was used.
 
                 - <u>Only</u> present in **service activity** records.
 
@@ -154,7 +154,7 @@ channels:
 
 
                 _Note:_ The way to obtain the value of this attribute must be deterministic and explicitly configured in the TC (at the _Service Criteria_ level).
-              example: 960000001
+              example: "960000001"
             communicationProducts:
               description: List of public identifiers of the product subscription. It <u>is not</u> present in **service activity** records.
               type: array
@@ -171,12 +171,12 @@ channels:
               example: Req-bce51c6a-8f16-11ee-b9d1-0242ac120002
             activityType:
               type: string
-              description: Activity type (e.g. `PRV`, `policy N7`, `authorization N5`, `N28`).
+              description: Activity type (e.g., `PRV`, `policy N7`, `authorization N5`, `N28`).
               example: PROVISIONING
             activitySubType:
               type: string
               description: >
-                Activity subtype (e.g. for activity type `PRV`: `CREATE_ACCOUNT`, `CREATE_PRODUCT`, `UPDATE_ACCOUNT`, `UPDATE_PRODUCT`).
+                Activity subtype (e.g., for activity type `PRV`: `CREATE_ACCOUNT`, `CREATE_PRODUCT`, `UPDATE_ACCOUNT`, `UPDATE_PRODUCT`).
               example: CREATE_PRODUCT
             activityStartTs:
               type: string
@@ -201,7 +201,7 @@ channels:
             activityTimeZone:
               type: string
               pattern: /^[+-]\d{2}:\d{2}$/
-              description: Timezone associated to the activity (e.g. `+00:00`).
+              description: Timezone associated to the activity (e.g., `+00:00`).
               example: +01:00
             activityBusinessResult:
               type: object
@@ -211,12 +211,11 @@ channels:
               properties:
                 code:
                   type: string
-                  description: Activity result code (e.g. `OK`).
+                  description: Activity result code (e.g., `OK`).
                   example: OK
                 classification:
                   type: string
                   description: Activity result category.
-                  # Mas está identificado como String
                   enum:
                     - SUCCESS
                     - CLIENT_ERROR
@@ -262,15 +261,15 @@ components:
   schemas:
     CommunicationProduct:
       type: object
-      description: Public communication product
+      description: Public communication product.
       properties:
         id:
           type: string
-          description: Public identifier of the product subscription (e.g. the phone number).
+          description: Public identifier of the product subscription (e.g., the phone number).
           example: "960000001"
         type:
           type: string
-          description: Product type. (e.g. `MOBILE`, `FIXED`)
+          description: Product type (e.g., `MOBILE`, `FIXED`).
           example: MOBILE
       externalDocs:
         description: GitHub - CommunicationProduct v1.15
@@ -301,7 +300,7 @@ components:
         # Diferenças entre activityTs e arrivalTs
         eventType:
           type: string
-          description: Nature of event (e.g. `Unique`, `Initial`, `Final`, `Intermediate`, etc.).
+          description: Nature of event (e.g., `Unique`, `Initial`, `Final`, `Intermediate`, etc.).
           example: Unique
         eventPayload:
           type: object
@@ -349,7 +348,7 @@ components:
               example: Customer request
         items:
           type: array
-          description: List of provisioned entities (e.g. _Account_, _Product_, _TopLevel_).
+          description: List of provisioned entities (e.g., _Account_, _Product_, _TopLevel_).
           items:
             description: provisioning item
             type: object
@@ -395,7 +394,7 @@ components:
     
     SessionPart:
       type: object
-      description: session policy segment
+      description: Session policy segment.
       properties:
         sessionPolicies:
           type: array
@@ -409,11 +408,11 @@ components:
           $ref: '#/components/schemas/AppliedEligibility'
         appliedPCCRules:
           type: array
-          description: Detailed information on the PCC rules applied during the sessions (e.g. periods of time when the session were on 4G or 5G).
+          description: Detailed information on the PCC rules applied during the sessions (e.g., periods of time when the session were on 4G or 5G).
           items:
             $ref: '#/components/schemas/AppliedPCCRule'
         appliedSessionRules:
-          description: Detailed information on the session rules applied during the sessions (e.g. periods of time when the session were on 4G or 5G).
+          description: Detailed information on the session rules applied during the sessions (e.g., periods of time when the session were on 4G or 5G).
           type: array
           items:
             $ref: '#/components/schemas/AppliedSessionRule'
@@ -425,7 +424,7 @@ components:
     
     SessionPolicy:
       type: object
-      description: session policy activity
+      description: Session policy activity.
       properties:
         id:
           type: string
@@ -453,7 +452,7 @@ components:
     
     ServicePolicy:
       type: object
-      description: session policy activity
+      description: Session policy activity.
       properties:
         id:
           type: string
@@ -476,7 +475,7 @@ components:
     
     EligibilityPlan:
       type: object
-      description: eligibility plan
+      description: Eligibility plan.
       properties:
         specId:
           type: string
@@ -489,7 +488,7 @@ components:
     
     SessionPlan:
       type: object
-      description: session plan
+      description: Session plan.
       properties:
         specId:
           type: string
@@ -519,7 +518,7 @@ components:
     
     NotificationPlan:
       type: object
-      description: notification plan
+      description: Notification plan.
       properties:
         specId:
           type: string
