@@ -22,15 +22,27 @@ channels:
     messages:
       ADR:
         title: Activity Data Record
-        summary: An information record about an activity performed in the system.
+        summary: An information record about an activity performed in the system for a user equipment (UE) - a device used directly by an end-user to communicate.
         description: >
           <details>
           <summary><u>ADR and LDR context:</u></summary>
-          LDR (Local Data Record) are local records created by each activity that occurs in the system with all the information arising from that activity. These records will contain a large amount of information in order to include resubmissions for correction and cancellation of actions.
+          <b>LDR (Local Data Record)</b> are local records created by each activity that occurs in the system with all the information arising from that activity. These records will contain a large amount of information in order to include resubmissions for correction and cancellation of actions, but also for diagnostic purposes.
+          <br>
+          Each system participates in diverse business processes with multiple activities (process = Σ activities). Since each activity generates a LDR, different LDRs created by different systems are enforced to be correlative to group LDRs from the same business process.
           <p>
-          Each system participates in diverse business processes with multiple activities (process = Σ activities).  Since each activity generates a LDR, different LDRs created by different systems are enforced to be correlative to group LDRs from the same business process.
-          <p>
-          ADR (Activity Data Record) are similar to LDRs. They are generated from LDRs and published externally, for third-party systems. While LDR are hardcoded in the own system (non-parameterizable), the structure of ADRs is decided by parameterization, via OMS (Operational & Maintenance System), with versioning.
+          <b>ADR (Activity Data Record)</b> are similar to LDRs. They are generated from LDRs and published externally, for third-party systems. While LDR are hardcoded in the own system (non-parameterizable), the structure of ADRs is decided by parameterization, via OMS (Operational & Maintenance System), with versioning. 
+          <br>
+          Depending on the ADR record type/scenario, some fields may be absent or have a different meaning. There are multiple types of ADR records: 
+          <ul>
+          <li> <b>service activity</b> records, which include policy control, policy authorization, and charging;
+          <li> <b>top-up</b> records; and
+          <li> <b>provision</b> records, for <i>Account</i>, <i>Product</i>, and <i>TopLevel</i> entities.
+          </ul>
+          In terms of scenarios, there are two:
+          <ul>
+          <li> <b>single event</b> scenarios, where there is no session (e.g., <b>provision</b>, <b>top-up</b>); and
+          <li> <b>session</b> scenarios (e.g., <b>service activity</b> records).
+          </ul>
           </details>
         externalDocs:
           description: Wiki - PCF ADR Specification
@@ -65,7 +77,7 @@ channels:
             required:
               - notifications
             properties:
-              notifications:
+              notifications_:
                 type: array
                 items:
                   $ref: '#/components/schemas/Notification'
@@ -91,7 +103,7 @@ channels:
               example: 2143ae4a-8f91-11ee-b9d1-0242ac120002
             systemId:
               type: string
-              description: System identifier. Useful on deployments, where there are multiple PCF systems.
+              description: System identifier. Useful on deployments, where there are multiple systems.
               example: MEOPCF
             version:
               type: string
@@ -111,52 +123,54 @@ channels:
               example: 2023-11-21T17:32:28Z
             correlationId:
               type: string
-              description: Identifier to associate this ADR with other records of other activities. Two ADRs from the same business process, but produced asynchronously in different activities/systems, can be associated.
+              description: >
+                Identifier to associate this ADR with other records of other activities. Two ADRs from the same business process, but produced asynchronously in different activities/systems, can be associated.\
+              
+                _Example_: when the ASM receives a request for a provision activity, it has to create an LDR with a `correlationId` and propagate that to the CCS and PCF systems. These systems will then create their own LDRs with the same `correlationId`.
               example: corr-40710e14-8f16-11ee-b9d1-0242ac120002
             productId:
               type: string
               description: >
-                Product identifier that subscribed to the service (aka agreement).
+                Identifier of the product that was subscribed (also known as agreement in 4th Gen.).
 
-                This subscription may have been made by a complementary product.
+                This subscription may have been made to a complementary product.
               example: product-7463524
             productOfferingId:
               type: string
-              description: Commercial offer identifier.
+              description: Identifier of the commercial offer template that originated the product subscribed.
               example: 188c66ee-8f18-11ee-b9d1-0242ac120002
             productAccountId:
               type: string
               description: >
-                Product account identifier related to the activity.
+                Account identifier related to the product of the activity.
                 Useful for aggregating products, alarms, counters, etc.
               example: ACC-12345
             productAccountTimeZone:
               type: string
               pattern: /^[+-]\d{2}:\d{2}$/
-              description: Timezone associated to the product account (e.g., `+00:00`).
+              description: Timezone associated to the product's account (e.g., `+00:00`).
               example: +00:00
             billingAccountId:
               type: string
               description: >
-                The billing account identifier related to the activity. Specific for billing purposes only.
+                The billing account identifier related to the activity. Specific for billing purposes only where an hierarchical structure of accounts is needed.\
+
+                _Example:_ When an account is provisioned through a reseller account.
               example: bill-acc-983625
             protocolSessionId:
               type: string
               description: Protocol network session identifier.
               example: Session-706ba8fc-f82d-48e7-84dd-af34127250c6
-            tecnhicalCommunicationId:
+            technicalCommunicationId:
               type: string
-              description: Public identifier of the equipment (e.g., MSISDN, IMSI, etc.) where the service was used.
+              description: Technical identifier of the UE (e.g., MSISDN, IMSI, etc.) that used the service. <u>Only required</u> in **service activity** records.\
 
-                - <u>Only</u> present in **service activity** records.
-
-                - <u>Does not</u> exist in **provision** records, **top-ups**, etc.
-
+                This allows the service request to be associated with the _TopLevel_ set responsible for processing it. If `communicationProducts` is present, this should match one of the `communicationProducts[].id` values.
 
                 _Note:_ The way to obtain the value of this attribute must be deterministic and explicitly configured in the TC (at the _Service Criteria_ level).
               example: "960000001"
             communicationProducts:
-              description: List of public identifiers of the product subscription. It <u>is not</u> present in **service activity** records.
+              description: List of public identifiers of the communication devices (UEs) with the product subscription. <u>Required</u> in **provision** records, but <u>optional</u> in **service activity** records.
               type: array
               items:
                 $ref: '#/components/schemas/CommunicationProduct'
@@ -167,7 +181,7 @@ channels:
 
                 - In **session** scenarios, it is the session identifier.
 
-                - In **single event** scenarios, where there is no session (e.g., provisioning, top-ups), it is the event identifier.        
+                - In **single event** scenarios, it is the event identifier.        
               example: Req-bce51c6a-8f16-11ee-b9d1-0242ac120002
             activityType:
               type: string
@@ -247,29 +261,29 @@ channels:
 
                 - In **single event** scenarios, it is the instant associated with the event.
               example: 2023-11-21T17:32:28Z     
-            events:
+            events_:
               type: array
               description: List of events
               items:
                 $ref: '#/components/schemas/Event'
             provisioning:
               $ref: '#/components/schemas/Provisioning'
-            policy:
+            policy_:
               $ref: '#/components/schemas/SMPolicyControl'
 
 components: 
   schemas:
     CommunicationProduct:
       type: object
-      description: Public communication product.
+      description: Public communication device (UE) with the product subscription.
       properties:
         id:
           type: string
-          description: Public identifier of the product subscription (e.g., the phone number).
+          description: Public identifier of the UE (e.g., MSISDN, IMSI, etc.) with the product subscription.
           example: "960000001"
         type:
           type: string
-          description: Product type (e.g., `MOBILE`, `FIXED`).
+          description: UE type with the product subscrition (e.g., `MOBILE`, `FIXED`).
           example: MOBILE
       externalDocs:
         description: GitHub - CommunicationProduct v1.15
@@ -285,22 +299,22 @@ components:
       properties:
         id:
           type: string
-          description: Event identifier.
+          description: Network event identifier.
           example: 99ce7f3f-5ae9-458a-a02a-acafb2e2677c
         activityTs:
           type: string
           format: UTCZ
-          description: Event activity instant.
+          description: Network event activity instant. `activityTs < arrivalTs`???
           example: 2023-11-30T01:01:03.746Z
         arrivalTs:
           type: string
           format: UTCZ
-          description: Event arrival/process instant.
+          description: Network event arrival/process instant.
           example: 2023-11-30T01:01:07.746Z
         # Diferenças entre activityTs e arrivalTs
         eventType:
           type: string
-          description: Nature of event (e.g., `Unique`, `Initial`, `Final`, `Intermediate`, etc.).
+          description: Nature of the network event (e.g., `Unique`, `Initial`, `Final`, `Intermediate`, etc.).
           example: Unique
         eventPayload:
           type: object
@@ -325,15 +339,24 @@ components:
       properties:
         channel:
           type: string
-          description: Event channel.
+          description: >
+            Channel system classification passed by parameter in the provision operation. \
+
+            _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to each system.
           example: Shop
         subChannel:
           type: string
-          description: Event subchannel.
+          description: >
+            Subchannel system classification passed by parameter in the provision operation.\
+
+            _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to each system.
           example: Web
         reason:
           type: object
-          description: reason
+          description: >
+            Provisioning reason. \
+
+            _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to each system.
           required:
             - code
           properties:
