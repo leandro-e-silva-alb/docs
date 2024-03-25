@@ -32,16 +32,16 @@ channels:
           <p>
           <b>ADR (Activity Data Record)</b> are similar to LDRs. They are generated from LDRs and published externally, for third-party systems. While LDR are hardcoded in the own system (non-parameterizable), the structure of ADRs is decided by parameterization, via OMS (Operational & Maintenance System), with versioning. 
           <br>
-          Depending on the ADR record type/scenario, some fields may be absent or have a different meaning. There are multiple types of ADR records: 
+          Depending on the ADR type/scenario, some fields may be absent or optional. There are multiple types of ADRs: 
           <ul>
-          <li> <b>service activity</b> records, which include policy control, policy authorization, and charging;
-          <li> <b>top-up</b> records; and
-          <li> <b>provision</b> records, for <i>Account</i>, <i>Product</i>, and <i>TopLevel</i> entities.
+          <li> <b>service activity</b>, which includes <b>policy control</b>, <b>policy authorization</b>, and <b>charging</b>;
+          <li> <b>top-up</b>; and
+          <li> <b>provision</b>, for <i>Account</i>, <i>Product</i>, and <i>TopLevel</i> entities.
           </ul>
           In terms of scenarios, there are two:
           <ul>
-          <li> <b>single event</b> scenarios, where there is no session (e.g., <b>provision</b>, <b>top-up</b>); and
-          <li> <b>session</b> scenarios (e.g., <b>service activity</b> records).
+          <li> <b>single event</b>, where there is no session (e.g., <b>provision</b>, <b>top-up</b>); and
+          <li> <b>session</b> (e.g., <b>service activity</b> records).
           </ul>
           </details>
         externalDocs:
@@ -155,7 +155,7 @@ channels:
               description: >
                 The billing account identifier related to the activity. Specific for billing purposes only where an hierarchical structure of accounts is needed.\
 
-                _Example:_ When an account is provisioned through a reseller account.
+                _Example:_ When a set of accounts are connected to a reseller account. Thus, the billing is made to the reseller account.
               example: bill-acc-983625
             protocolSessionId:
               type: string
@@ -261,7 +261,7 @@ channels:
 
                 - In **single event** scenarios, it is the instant associated with the event.
               example: 2023-11-21T17:32:28Z     
-            events_:
+            events:
               type: array
               description: List of events
               items:
@@ -304,14 +304,13 @@ components:
         activityTs:
           type: string
           format: UTCZ
-          description: Network event activity instant. `activityTs < arrivalTs`???
+          description: Network event activity instant. This corresponds to the instant when the request arrived.
           example: 2023-11-30T01:01:03.746Z
         arrivalTs:
           type: string
           format: UTCZ
-          description: Network event arrival/process instant.
+          description: Network event arrival/process instant. This corresponds to the instant when the request was handled (`activityTs <= arrivalTs`).
           example: 2023-11-30T01:01:07.746Z
-        # Diferenças entre activityTs e arrivalTs
         eventType:
           type: string
           description: Nature of the network event (e.g., `Unique`, `Initial`, `Final`, `Intermediate`, etc.).
