@@ -26,22 +26,22 @@ channels:
         description: >
           <details>
           <summary><u>ADR and LDR context:</u></summary>
-          <b>LDR (Local Data Record)</b> are local records created by each activity that occurs in the system with all the information arising from that activity. These records will contain a large amount of information in order to include resubmissions for correction and cancellation of actions, but also for diagnostic purposes.
+          <b>LDR (Local Data Record)</b> are local records created by each activity that occurs in the system with all the information arising from that activity. They contain a large amount of information in order to include resubmissions for correction and cancellation of actions, but also for diagnostic purposes.
           <br>
           Each system participates in diverse business processes with multiple activities (process = Σ activities). Since each activity generates a LDR, different LDRs created by different systems are enforced to be correlative to group LDRs from the same business process.
           <p>
           <b>ADR (Activity Data Record)</b> are similar to LDRs. They are generated from LDRs and published externally, for third-party systems. While LDR are hardcoded in the own system (non-parameterizable), the structure of ADRs is decided by parameterization, via OMS (Operational & Maintenance System), with versioning. 
           <br>
-          Depending on the ADR type/scenario, some fields may be absent or optional. There are multiple types of ADRs: 
+          Depending on the ADR type/scenario, some fields may be absent or optional. There are multiple types of ADRs, commonly grouped as follows: 
           <ul>
-          <li> <b>service activity</b>, which includes <b>policy control</b>, <b>policy authorization</b>, and <b>charging</b>;
-          <li> <b>top-up</b>; and
-          <li> <b>provision</b>, for <i>Account</i>, <i>Product</i>, and <i>TopLevel</i> entities.
+          <li> <b>service activity</b> ADRs, which includes <code>SMPolicyControl</code>, <code>PolicyAuthorization</code>, and <code>Charging</code>;
+          <li> <b>provision</b> ADRs, which includes <code>AccountManagement</code> (for <i>Account</i> provisions), and <code>ProductManagement</code> (for <i>Product</i> and <i>TopLevel</i> provisions); and
+          <li> <b>top-up</b> ADRs.
           </ul>
           In terms of scenarios, there are two:
           <ul>
-          <li> <b>single event</b>, where there is no session (e.g., <b>provision</b>, <b>top-up</b>); and
-          <li> <b>session</b> (e.g., <b>service activity</b> records).
+          <li> <b>single event</b> scenarios, where there is no session (e.g., <b>provision</b> ADRs, <b>top-up</b> ADRs); and
+          <li> <b>session</b> scenarios (e.g., <b>service activity</b> ADRs).
           </ul>
           </details>
         externalDocs:
@@ -66,45 +66,41 @@ channels:
               format: int32
               minimum: 0
         payload:
-          if:
-            type: object
-            properties:
-              version:
-                type: string
-                const: 1.2
-          then:
-            type: object
-            required:
-              - notifications
-            properties:
-              notifications_:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Notification'
+          type: object
           description: The ADR definition.
           required:
-            - id
-            - systemId
-            - version
-            - ldrId
-            - creationTs
-            - activityType
-            - activitySubType
-            - activityStartTs
-          type: object
+          - id
+          - systemId
+          - version
+          - ldrId
+          - creationTs
+          - activityType
+          - activitySubType
+          - activityStartTs
+          dependencies:
+            notifications:
+              type: array
+              item: object
+              required: ['version']
+              properties:
+                version:
+                  type: string
+                  const: 1.2
+           
+                  
           properties:
             id:
               type: string
               format: uuid
               description: >
-                Unique identifier of the ADR.\
-                
+                Unique identifier of the ADR.
+                <p>
                 _Note:_ it is coincident to the source LDR identifier.
-              example: 2143ae4a-8f91-11ee-b9d1-0242ac120002
             systemId:
               type: string
               description: System identifier. Useful on deployments, where there are multiple systems.
-              example: MEOPCF
+              examples: 
+              - MEOPCF
             version:
               type: string
               pattern: /^\d+\.\d+$/
@@ -112,63 +108,55 @@ channels:
                 ADR global specification version, in the format: `<Major>.<minor>`.\
                 
                 When there are changes that do not break backward compatibility, the **minor** version will be increased, otherwise, the **Major**  version will be increased.
-              example: 1.1
             creationTs:
               type: string
               description: >
-                LDR creation instant.\
-
+                LDR creation instant.
+                <p>
                 _Note:_ <u>Not</u> the publish instant, <u>nor</u> the LDR to ADR transformation instant.
               format: UTCZ
-              example: 2023-11-21T17:32:28Z
             correlationId:
               type: string
               description: >
-                Identifier to associate this ADR with other records of other activities. Two ADRs from the same business process, but produced asynchronously in different activities/systems, can be associated.\
-              
+                Identifier to associate this ADR with other records of other activities. Two ADRs from the same business process, but produced asynchronously in different activities/systems, can be associated.
+                <p>
                 _Example_: when the ASM receives a request for a provision activity, it has to create an LDR with a `correlationId` and propagate that to the CCS and PCF systems. These systems will then create their own LDRs with the same `correlationId`.
-              example: corr-40710e14-8f16-11ee-b9d1-0242ac120002
             productId:
               type: string
               description: >
                 Identifier of the product that was subscribed (also known as agreement in 4th Gen.).
 
                 This subscription may have been made to a complementary product.
-              example: product-7463524
             productOfferingId:
               type: string
               description: Identifier of the commercial offer template that originated the product subscribed.
-              example: 188c66ee-8f18-11ee-b9d1-0242ac120002
             productAccountId:
               type: string
-              description: >
-                Account identifier related to the product of the activity.
-                Useful for aggregating products, alarms, counters, etc.
-              example: ACC-12345
+              description: Account that contains the product of the activity.
             productAccountTimeZone:
               type: string
               pattern: /^[+-]\d{2}:\d{2}$/
-              description: Timezone associated to the product's account (e.g., `+00:00`).
-              example: +00:00
+              description: Timezone associated to the product's account.
+              examples: 
+              - +00:00
             billingAccountId:
               type: string
               description: >
-                The billing account identifier related to the activity. Specific for billing purposes only where an hierarchical structure of accounts is needed.\
-
-                _Example:_ When a set of accounts are connected to a reseller account. Thus, the billing is made to the reseller account.
-              example: bill-acc-983625
+                The billing account identifier related to the activity. Specific for billing purposes only where an hierarchical structure of accounts is needed.
+                <p>
+                _Example:_ when a set of accounts are connected to a reseller account (meaning that every account, including the reseller account, has the `billingAccountId` equal to the reseller account identifier) the billing is unified on a single invoice belonging to the reseller account.
             protocolSessionId:
               type: string
               description: Protocol network session identifier.
-              example: Session-706ba8fc-f82d-48e7-84dd-af34127250c6
             technicalCommunicationId:
               type: string
               description: Technical identifier of the UE (e.g., MSISDN, IMSI, etc.) that used the service. <u>Only required</u> in **service activity** records.\
 
                 This allows the service request to be associated with the _TopLevel_ set responsible for processing it. If `communicationProducts` is present, this should match one of the `communicationProducts[].id` values.
-
+                <p>
                 _Note:_ The way to obtain the value of this attribute must be deterministic and explicitly configured in the TC (at the _Service Criteria_ level).
-              example: "960000001"
+              examples: 
+              - "960000001"
             communicationProducts:
               description: List of public identifiers of the communication devices (UEs) with the product subscription. <u>Required</u> in **provision** records, but <u>optional</u> in **service activity** records.
               type: array
@@ -182,16 +170,51 @@ channels:
                 - In **session** scenarios, it is the session identifier.
 
                 - In **single event** scenarios, it is the event identifier.        
-              example: Req-bce51c6a-8f16-11ee-b9d1-0242ac120002
             activityType:
               type: string
-              description: Activity type (e.g., `PRV`, `policy N7`, `authorization N5`, `N28`).
-              example: PROVISIONING
+              description: Describes the activity performed.
+              enum:
+                - AccountManagement
+                - ProductManagement
+                - SMPolicyControl
+                - PolicyAuthorization
+                - SpendingLimit
             activitySubType:
               type: string
               description: >
-                Activity subtype (e.g., for activity type `PRV`: `CREATE_ACCOUNT`, `CREATE_PRODUCT`, `UPDATE_ACCOUNT`, `UPDATE_PRODUCT`).
-              example: CREATE_PRODUCT
+                Describes the nature of the activity type. For (e.g., for activity type `PRV`: `CREATE_ACCOUNT`, `CREATE_PRODUCT`, `UPDATE_ACCOUNT`, `UPDATE_PRODUCT`).
+              if:
+                title: dsf
+                properties:
+                  activityType:
+                    title: fe
+                    const: CREATE_PRODUCT
+              then:
+                properties:
+                  activitySubType:
+                    enum:
+                    - A
+                    - B
+              
+            activitySubType2:
+              type: string
+              description: >
+                Describes the nature of the activity type. For (e.g., for activity type `PRV`: `CREATE_ACCOUNT`, `CREATE_PRODUCT`, `UPDATE_ACCOUNT`, `UPDATE_PRODUCT`).
+              oneOf:
+                - provisioning:
+                  title: AccountManagement
+                  enum:
+                  - A
+                - provisioning:
+                  title: F2
+                  enum:
+                  - A~
+                - provisioning:
+                  title: F
+                  enum:
+                  - A
+
+
             activityStartTs:
               type: string
               format: UTCZ
@@ -201,7 +224,6 @@ channels:
                 - In **session** scenarios, it is the beginning of the session. Intermediate records in a session (due to limit of consumption, time, or events) fill this field with the TS at the beginning of the session.
 
                 - In **single event** scenarios, it is the instant associated with the event.
-              example: 2023-11-21T17:32:28Z
             activityEndTs:
               type: string
               format: UTCZ
@@ -211,28 +233,29 @@ channels:
                 - In **session** scenarios, it is the end of the session. Intermediate records in a session (due to limit of consumption, time, or events) <u>do not</u> fill in this field.
 
                 - In **single event** scenarios, it is the instant associated with the event (i.e. equal to `activityStartTs`).
-              example: 2023-11-21T17:32:28Z
             activityTimeZone:
               type: string
               pattern: /^[+-]\d{2}:\d{2}$/
-              description: Timezone associated to the activity (e.g., `+00:00`).
-              example: +01:00
+              description: Timezone associated to the activity.
+              examples: 
+              - +00:00
             activityBusinessResult:
               type: object
               description: Business result of the reported activity.
               required:
-                - code
+              - code
               properties:
                 code:
                   type: string
-                  description: Activity result code (e.g., `OK`).
-                  example: OK
+                  description: Activity result code.
+                  examples: 
+                  - OK
                 classification:
                   type: string
                   description: Activity result category.
                   enum:
-                    - SUCCESS
-                    - CLIENT_ERROR
+                  - SUCCESS
+                  - CLIENT_ERROR
             segmentNumber:
               type: integer
               minimum: 1
@@ -240,7 +263,6 @@ channels:
                 Index for the part (segment) of the activity to which the record refers.
 
                 - In **session** scenarios, several intermediate records can be generated (limit of consumption, time, or events).
-              example: 1
             segmentStartTs:
               type: string
               format: UTCZ
@@ -250,7 +272,6 @@ channels:
                 - In **session** scenarios, it is the instant associated with the beginning of the segment (at the beginning of the session, it is equal to `activityStartTs`).
 
                 - In **single event** scenarios, it is the instant associated with the event.
-              example: 2023-11-21T17:32:28Z
             segmentEndTs:
               type: string
               format: UTCZ
@@ -260,7 +281,6 @@ channels:
                 - In **session** scenarios, it is the instant associated with the end of the segment (at the end of the session, the end of the segment is equal to `activityEndTs`).
 
                 - In **single event** scenarios, it is the instant associated with the event.
-              example: 2023-11-21T17:32:28Z     
             events:
               type: array
               description: List of events
@@ -270,6 +290,109 @@ channels:
               $ref: '#/components/schemas/Provisioning'
             policy_:
               $ref: '#/components/schemas/SMPolicyControl'
+            notifications_:
+              type: array
+              items:
+                $ref: '#/components/schemas/Notification'
+        examples:
+        - payload: 
+            id: 2143ae4a-8f91-11ee-b9d1-0242ac120002
+            systemId: MEOPCF
+            version: 1.1
+            creationTs: 2023-11-21T17:32:28.000Z
+            correlationId: corr-40710e14-8f16-11ee-b9d1-0242ac120002
+            productId: product-7463524
+            productOfferingId: 188c66ee-8f18-11ee-b9d1-0242ac120002
+            productAccountId: ACC-12345
+            productAccountTimeZone: +00:00
+            billingAccountId: bill-acc-983625
+            protocolSessionId: Session-706ba8fc-f82d-48e7-84dd-af34127250c6
+            technicalCommunicationId: "960000001"
+            communicationProducts:
+              id: "960000001"
+              type: MOBILE
+            activityId: Req-bce51c6a-8f16-11ee-b9d1-0242ac120002
+            activityType: ProductManagement
+            activitySubType: CREATE_PRODUCT
+            activityStartTs: 2023-11-21T17:32:28.000Z
+            activityEndTs: 2023-11-21T17:32:28.000Z
+            activityTimeZone: +00:00
+            activityBusinessResult:
+              code: OK
+              classification: SUCCESS
+            segmentNumber: 1
+            segmentStartTs: 2023-11-21T17:32:28.000Z
+            segmentEndTs: 2023-11-21T17:32:28.000Z
+            events:
+              id: 99ce7f3f-5ae9-458a-a02a-acafb2e2677c
+              activityTs: 2023-11-30T01:01:03.746Z
+              arrivalTs: 2023-11-30T01:01:07.746Z
+              eventType: Unique
+              eventPayload: 
+                id: 1
+                activityTs: 2023-11-30T01:01:03.746Z
+                eventType: Unique
+                data:
+                  value1: 1
+                  value2: 2
+            provisioning:
+              channel: Shop
+              subChannel: Web
+              reason:
+                code: CLIENT
+                description: Customer request
+              items:
+              - operation: CREATE
+                type: Account
+                entity:
+                  id: 8a1baff3-d8a4-4330-95c6-744b7e6b9493
+                  accountId: acc-12345
+                  productOffering: f1200364-8f20-11ee-b9d1-0242ac120002
+                  productCharacteristics:
+                  - name: offer
+                    value: Postpaid
+                  - name: User
+                    value: John
+                  communicationProducts:
+                    id: "960000001"
+                    type: mobile
+              policy_:
+                sessionPart:
+                  sessionPolicies:
+                  - id: tl-123465
+                    specId: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
+                    eligibilityPlans:
+                    - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
+                      resultSpecId: 47761961-08ec-40b3-807f-5777a5d92c33
+                    sessionPlans:
+                    - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
+                      resultSpecIds:
+                      - 47761961-08ec-40b3-807f-5777a5d92c33
+                    notificationPlans: 
+                    - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
+                      resultSpecIds:
+                      - 47761961-08ec-40b3-807f-5777a5d92c33
+                  servicePolicies:
+                  - id: tl-123465
+                    specId: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
+                    servicePlans:
+                    - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
+                      resultSpecIds:
+                      - 47761961-08ec-40b3-807f-5777a5d92c33
+                    notificationPlans:
+                    - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
+                      resultSpecIds:
+                      - 47761961-08ec-40b3-807f-5777a5d92c33
+                  appliedEligibility:
+                    result: true
+                    reason: AUTHORIZED
+                  appliedPCCRules:
+                  - specId: 04bb4505-e880-496e-8aeb-260ff5728575
+                  appliedSessionRules:
+                  - specId: 04bb4505-e880-496e-8aeb-260ff5728575
+                  policyCounters:
+                  - id: counter-12345
+                    value: 100
 
 components: 
   schemas:
@@ -280,11 +403,14 @@ components:
         id:
           type: string
           description: Public identifier of the UE (e.g., MSISDN, IMSI, etc.) with the product subscription.
-          example: "960000001"
+          examples: 
+          - "960000001"
         type:
           type: string
-          description: UE type with the product subscrition (e.g., `MOBILE`, `FIXED`).
-          example: MOBILE
+          description: UE type with the product subscrition.
+          examples: 
+          - MOBILE
+          - FIXED
       externalDocs:
         description: GitHub - CommunicationProduct v1.15
         url: https://github.com/AlticeLabsProjects/ccp-common-models/blob/v1.15/src/main/java/com/alticelabs/ccp/common_models/types/CommunicationProduct.java
@@ -292,82 +418,81 @@ components:
     Event:
       type: object
       required:
-        - activityTs
-        - arrivalTs
-        - eventType
-        - eventPayload
+      - activityTs
+      - arrivalTs
+      - eventType
+      - eventPayload
       properties:
         id:
           type: string
           description: Network event identifier.
-          example: 99ce7f3f-5ae9-458a-a02a-acafb2e2677c
         activityTs:
           type: string
           format: UTCZ
           description: Network event activity instant. This corresponds to the instant when the request arrived.
-          example: 2023-11-30T01:01:03.746Z
         arrivalTs:
           type: string
           format: UTCZ
           description: Network event arrival/process instant. This corresponds to the instant when the request was handled (`activityTs <= arrivalTs`).
-          example: 2023-11-30T01:01:07.746Z
         eventType:
           type: string
-          description: Nature of the network event (e.g., `Unique`, `Initial`, `Final`, `Intermediate`, etc.).
-          example: Unique
+          description: Nature of the network event.
+          enum: 
+            - Unique
+            - Initial
+            - Final
+            - Intermediate
         eventPayload:
           type: object
           additionalProperties: true
           description: >
             Internal representation of the network event that arrived at the system converted by the Protocol Mapper.
-          example:
-            - id: 1
-              activityTs: 2023-11-30T01:01:03.746Z
-              eventType: Unique
-              data:
-                - value1: 1
-                  value2: 2
+         
     
     Provisioning:
       type: object
       description: Provisioning information.
       required:
-        - channel
-        - subChannel
-        - reason
+      - channel
+      - subChannel
+      - reason
       properties:
         channel:
           type: string
           description: >
-            Channel system classification passed by parameter in the provision operation. \
-
+            Channel system classification passed by parameter in the provision operation.
+            <p>
             _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to each system.
-          example: Shop
+          examples: 
+          - Shop
         subChannel:
           type: string
           description: >
-            Subchannel system classification passed by parameter in the provision operation.\
-
+            Subchannel system classification passed by parameter in the provision operation.
+            <p>
             _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to each system.
-          example: Web
+          examples: 
+          - Web
         reason:
           type: object
           description: >
-            Provisioning reason. \
-
+            Provisioning reason.
+            <p>
             _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to each system.
           required:
-            - code
+          - code
           properties:
             code:
               type: string
               description: Operation reason code.
-              example: CLIENT
+              examples: 
+              - CLIENT
             description:
               type: string
               description: >
                 Reason description (e.g., balance adjustment due to customer complaint, account).
-              example: Customer request
+              examples:
+              - Customer request
         items:
           type: array
           description: List of provisioned entities (e.g., _Account_, _Product_, _TopLevel_).
@@ -375,22 +500,27 @@ components:
             description: provisioning item
             type: object
             required:
-              - operation
-              - type
+            - operation
+            - type
             properties:
               operation:
                 type: string
-                description: Provisioned operation (e.g., `CREATE`, `UPDATE`, etc.).
-                example: CREATE
+                description: Provisioned operation.
+                examples: 
+                - CREATE
+                - UPDATE
               type:
                 type: string
-                description: Provisioned entity type (e.g., `Account`, `Product`, `ServicePolicy`).
-                example: Product
+                description: Provisioned entity type.
+                examples:
+                - Account
+                - Product
+                - ServicePolicy
               entity:
                 type: object
                 description: Representation of the entity result after its changes.
-                example:
-                  id: 8a1baff3-d8a4-4330-95c6-744b7e6b9493
+                examples:
+                - id: 8a1baff3-d8a4-4330-95c6-744b7e6b9493
                   accountId: acc-12345
                   productOffering: f1200364-8f20-11ee-b9d1-0242ac120002
                   productCharacteristics:
@@ -451,11 +581,9 @@ components:
         id:
           type: string
           description: Top Level unique identifier.
-          example: tl-123465
         specId:
           type: string
           description: Top Level specification identifier.
-          example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
         eligibilityPlans:
           type: array
           description: List of executed Eligibility Plans.
@@ -474,16 +602,14 @@ components:
     
     ServicePolicy:
       type: object
-      description: Session policy activity.
+      description: Service policy activity.
       properties:
         id:
           type: string
           description: Top Level unique identifier.
-          example: tl-123465
         specId:
           type: string
           description: Top Level specification identifier.
-          example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
         servicePlans:
           type: array
           description: List of executed Service Plans.
@@ -502,11 +628,9 @@ components:
         specId:
           type: string
           description: Identification of the specification of the executed plan.
-          example: 81455de9-46f8-4991-8f09-ff55eaa97039
         resultSpecId:
           type: string
           description: Identification of plan specification result.
-          example: 47761961-08ec-40b3-807f-5777a5d92c33
     
     SessionPlan:
       type: object
@@ -515,13 +639,11 @@ components:
         specId:
           type: string
           description: Identification of the specification of the executed plan.
-          example: 81455de9-46f8-4991-8f09-ff55eaa97039
         resultSpecIds:
           type: array
           items:
             type: string
             description: Identification of plan specification result.
-            example: 47761961-08ec-40b3-807f-5777a5d92c33
     
     ServicePlan:
       type: object
@@ -530,13 +652,11 @@ components:
         specId:
           type: string
           description: Identification of the specification of the executed plan
-          example: 81455de9-46f8-4991-8f09-ff55eaa97039
         resultSpecIds:
           type: array
           items:
             type: string
             description: Identification of plan specification result.
-            example: 47761961-08ec-40b3-807f-5777a5d92c33
     
     NotificationPlan:
       type: object
@@ -545,13 +665,11 @@ components:
         specId:
           type: string
           description: Identification of the specification of the executed plan
-          example: 81455de9-46f8-4991-8f09-ff55eaa97039
         resultSpecIds:
           type: array
           items:
             type: string
             description: Identification of plan specification result.
-            example: 47761961-08ec-40b3-807f-5777a5d92c33
     
     AppliedEligibility:
       type: object
@@ -560,11 +678,11 @@ components:
         result:
           type: boolean
           description: Eligibility result.
-          example: true
         reason:
           type: string
           description: Eligibility reason.
-          example: AUTHORIZED
+          examples:
+          - AUTHORIZED
     
     AppliedPCCRule:
       type: object
@@ -573,7 +691,6 @@ components:
         specId:
           type: string
           description: Identifier of the applied PCC Rule specification.
-          example: 04bb4505-e880-496e-8aeb-260ff5728575
     
     AppliedSessionRule:
       type: object
@@ -581,7 +698,6 @@ components:
         specId:
           type: string
           description: Identifier of the applied Session Rule specification.
-          example: 04bb4505-e880-496e-8aeb-260ff5728575
     
     PolicyCounter:
       type: object
@@ -590,11 +706,12 @@ components:
         id:
           type: string
           description: Policy Counter identifier.
-          example: counter-12345
         value:
           type: string
           description: Policy Counter value.
-          example: "100"
+      examples:
+      - id: counter-12345
+        value: "100"
     
     Notification:
       type: object
@@ -604,42 +721,45 @@ components:
         id:
           type: string
           description: The unique identifier for the notification.
-          example: 23423423423
         channel:
           type: string
-          description: The channel through which the notification is sent (e.g., SMS, EMAIL).
-          example: SMS
+          description: The channel through which the notification is sent.
+          examples: 
+          - SMS
+          - EMAIL
         originator:
           type: string
           description: The originator address for the notification (email or phone number/large account).
-          example: "103"
+          examples: 
+          - "103"
         destinations:
           type: array
           items:
             type: string
           description: The list of destination addresses for the notification (emails or phone numbers).
-          example:
-            - "961234567"
+          examples:
+          - "961234567"
         subject:
           type: string
           description: The subject of the notification (only applicable for email notifications).
-          example: email subject
+          examples: 
+          - email subject
         message:
           type: string
           description: The content of the notification message.
-          example: Insufficient balance. Please recharge. Thanks.
+          examples: 
+          - Insufficient balance. Please recharge. Thanks.
         publishTs:
           type: string
           format: utcz
           description: The timestamp when the notification is published.
-          example: 2023-11-29T10:36:50.000Z
         validityTs:
           type: string
           format: utcz
           description: The timestamp indicating the validity of the notification message.
-          example: 2023-12-10T10:53:16.000Z
         dispatchPeriods:
           type: array
+          description: The periods during which the notification can be dispatched.
           minItems: 1
           items:
             type: object
@@ -648,39 +768,25 @@ components:
                 type: string
                 format: UTCZ
                 description: The start timestamp of the dispatch period.
-                example: 2023-11-29T10:00:00.000Z
               endTs:
                 type: string
                 format: UTCZ
                 description: The end timestamp of the dispatch period.
-                example: 2013-11-29T20:00:00.000Z
-          description: The periods during which the notification can be dispatched.
-          example:
-            - startTs: "2023-11-29T10:00:00.000Z"
-              endTs: "2013-11-29T20:00:00.000Z"
-            - startTs: "2023-11-30T10:00:00.000Z"
-              endTs: "2013-11-30T20:00:00.000Z"
         ntfTopLevelSpecId:
           type: string
           description: The identifier for the notification top-level spec.
-          example: 6322f4bf44f6550d65324234523
         ntfTopLevelSpecVersion:
           type: string
           description: The version of the notification top-level spec.
-          example: "1"
         ntfPlanSpecId:
           type: string
           description: The identifier for the notification plan spec.
-          example: 6322f4bf44f6550d653391fc
         ntfPlanSpecVersion:
           type: string
           description: The version of the notification plan spec.
-          example: "1"
         ntfResultSpecId:
           type: string
           description: The identifier for the notification result spec.
-          example: 6322f4bf44f6550d65324234523
         ntfResultSpecVersion:
           type: string
           description: The version of the notification result spec.
-          example: "1" 
