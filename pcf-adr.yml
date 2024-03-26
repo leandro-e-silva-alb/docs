@@ -78,20 +78,47 @@ channels:
           - activitySubType
           - activityStartTs
           dependencies:
+            activitySubType:
+              oneOf:
+              - title: AccountManagement ADR
+                properties:
+                  activityType:
+                    const: "AccountManagement"
+                  activitySubType:
+                    enum: ['CreateAccount', 'UpdateAccount']
+              - title: ProductManagement ADR
+                properties:
+                  activityType:
+                    const: "ProductManagement"
+                  activitySubType:
+                    enum: ['CreateProduct', 'UpdateProduct']
+              - title: SMPolicyControl ADR
+                properties:
+                  activityType:
+                    const: "SMPolicyControl"
+                  activitySubType:
+                    enum: ['SMPolicyControl']
+              - title: PolicyAuthorization ADR
+                properties:
+                  activityType:
+                    const: "PolicyAuthorization"
+                  activitySubType:
+                    enum: ['PolicyAuthorization']
+              - title: SpendingLimit ADR
+                properties:
+                  activityType:
+                    const: "SpendingLimit"
+                  activitySubType:
+                    enum: ['SpendingLimit']
             notifications:
-              type: array
-              item: object
               required: ['version']
               properties:
                 version:
                   type: string
                   const: 1.2
-           
-                  
           properties:
             id:
               type: string
-              format: uuid
               description: >
                 Unique identifier of the ADR.
                 <p>
@@ -120,7 +147,7 @@ channels:
               description: >
                 Identifier to associate this ADR with other records of other activities. Two ADRs from the same business process, but produced asynchronously in different activities/systems, can be associated.
                 <p>
-                _Example_: when the ASM receives a request for a provision activity, it has to create an LDR with a `correlationId` and propagate that to the CCS and PCF systems. These systems will then create their own LDRs with the same `correlationId`.
+                _Example:_ when the ASM receives a request for a provision activity, it has to create an LDR with a `correlationId` and propagate that to the CCS and PCF systems. These systems will then create their own LDRs with the same `correlationId`.
             productId:
               type: string
               description: >
@@ -181,40 +208,7 @@ channels:
                 - SpendingLimit
             activitySubType:
               type: string
-              description: >
-                Describes the nature of the activity type. For (e.g., for activity type `PRV`: `CREATE_ACCOUNT`, `CREATE_PRODUCT`, `UPDATE_ACCOUNT`, `UPDATE_PRODUCT`).
-              if:
-                title: dsf
-                properties:
-                  activityType:
-                    title: fe
-                    const: CREATE_PRODUCT
-              then:
-                properties:
-                  activitySubType:
-                    enum:
-                    - A
-                    - B
-              
-            activitySubType2:
-              type: string
-              description: >
-                Describes the nature of the activity type. For (e.g., for activity type `PRV`: `CREATE_ACCOUNT`, `CREATE_PRODUCT`, `UPDATE_ACCOUNT`, `UPDATE_PRODUCT`).
-              oneOf:
-                - provisioning:
-                  title: AccountManagement
-                  enum:
-                  - A
-                - provisioning:
-                  title: F2
-                  enum:
-                  - A~
-                - provisioning:
-                  title: F
-                  enum:
-                  - A
-
-
+              description: Describes the nature of the activity type. The value depends on the `activityType` value. 
             activityStartTs:
               type: string
               format: UTCZ
@@ -288,9 +282,9 @@ channels:
                 $ref: '#/components/schemas/Event'
             provisioning:
               $ref: '#/components/schemas/Provisioning'
-            policy_:
+            policy:
               $ref: '#/components/schemas/SMPolicyControl'
-            notifications_:
+            notifications:
               type: array
               items:
                 $ref: '#/components/schemas/Notification'
@@ -313,7 +307,7 @@ channels:
               type: MOBILE
             activityId: Req-bce51c6a-8f16-11ee-b9d1-0242ac120002
             activityType: ProductManagement
-            activitySubType: CREATE_PRODUCT
+            activitySubType: CreateProduct
             activityStartTs: 2023-11-21T17:32:28.000Z
             activityEndTs: 2023-11-21T17:32:28.000Z
             activityTimeZone: +00:00
@@ -356,7 +350,7 @@ channels:
                   communicationProducts:
                     id: "960000001"
                     type: mobile
-              policy_:
+              policy:
                 sessionPart:
                   sessionPolicies:
                   - id: tl-123465
