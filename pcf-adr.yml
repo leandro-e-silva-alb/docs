@@ -35,7 +35,7 @@ channels:
           Depending on the ADR type/scenario, some fields may be absent or optional. There are multiple types of ADRs, commonly grouped as follows: 
           <ul>
           <li> <b>service activity</b> ADRs, which includes <code>SMPolicyControl</code>, <code>PolicyAuthorization</code>, and <code>Charging</code>;
-          <li> <b>provision</b> ADRs, which includes <code>AccountManagement</code> (for <i>Account</i> provisions), and <code>ProductManagement</code> (for <i>Product</i> and <i>TopLevel</i> provisions); and
+          <li> <b>provision</b> ADRs, which includes <code>AccountManagement</code> (for <i>Account</i> provisions), <code>ProductManagement</code> (for <i>Product</i> and <i>TopLevel</i> provisions), and <code>BucketManagement</code>; and
           <li> <b>top-up</b> ADRs.
           </ul>
           In terms of scenarios, there are two:
@@ -513,18 +513,118 @@ components:
               entity:
                 type: object
                 description: Representation of the entity result after its changes.
-                examples:
-                - id: 8a1baff3-d8a4-4330-95c6-744b7e6b9493
-                  accountId: acc-12345
-                  productOffering: f1200364-8f20-11ee-b9d1-0242ac120002
-                  productCharacteristics:
-                    - name: offer
-                      value: Postpaid
-                    - name: User
-                      value: John
-                  communicationProducts:
-                    - id: "960000001"
-                      type: mobile
+                properties:
+                  ID: 
+                    type: string
+                    description: Identifier of the entity in the system (`ExagonEntity` identifier).
+                oneOf:
+                - title: Account
+                  description: >
+                    `Account` entity representation.
+                  properties:
+                    productIds: 
+                      type: array
+                      uniqueItems: true
+                      items:
+                        type: string
+                    billingAccountId:
+                      type: string
+                    creationDate:
+                      type: string
+                      format: utcz
+                    entries:
+                      type: object
+                      description: A map with the entries name from the account offer template as keys and the values prescribed??
+                      additionalProperties:
+                        type: string
+                      examples:
+                      - msisdn: "962222222"
+                - title: Product
+                  description: >
+                    `Product` entity representation.
+                  properties:
+                    accountId:
+                      type:	string	
+                    creationDate:
+                      type: string
+                      format: utcz
+                    parentProductId:
+                      type: string	
+                    productOfferingSpecId:
+                      type: string
+                      description: The 
+                    servicePolicyIds:
+                      type: array
+                      uniqueItems: true
+                      items: 
+                        type: string
+                    sessionPolicyIds:
+                      type: array
+                      uniqueItems: true
+                      items:
+                        type: string
+                    communicationProducts:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/CommunicationProduct'
+                    entries:
+                      type: object
+                      description: A map with the entries name from the product offer template as keys and the values prescribed??
+                      additionalProperties:
+                        type: string
+                      examples:
+                      - name: agreement 123
+                - title: TopLevel
+                  description: >
+                    _TopLevel_ representation. Conforms to all _TopLevel_ entities: `AuthorizationPolicy`, `ServicePolicy`, and `SessionPolicy`.
+                  properties:
+                    specId:
+                      type: string
+                    accountId:
+                      type: string
+                    productId:
+                      type: string
+                    creationDate:
+                      type: string
+                      format: utcz
+                    startDate:
+                      type: string
+                      format: utcz
+                    endDate:
+                      type: string
+                      format: utcz
+                    suspendedDate:
+                      type: string
+                      format: utcz
+                    releaseDate:
+                      type: string
+                      format: utcz
+                    adminStatus:
+                      type: string
+                    coexistenceRules:
+                      type: object
+                      properties:
+                        excludedBy:
+                          type: array
+                          items:
+                            type: string
+                        excludes:
+                          type: array
+                          items:
+                            type: string
+                        onTopOf:
+                          type: array
+                          items:
+                            type: string
+                        onBottomOf:
+                          type: array
+                          items:
+                            type: string
+                    entries:
+                      type: object
+                      description: A map with the entries name from the toplevel offer template as keys and the values prescribed??
+                      additionalProperties:
+                        type: string
     
     SMPolicyControl:
       type: object
@@ -635,6 +735,7 @@ components:
           description: Identification of the specification of the executed plan.
         resultSpecIds:
           type: array
+          uniqueItems: true
           items:
             type: string
             description: Identification of plan specification result.
@@ -648,6 +749,7 @@ components:
           description: Identification of the specification of the executed plan
         resultSpecIds:
           type: array
+          uniqueItems: true
           items:
             type: string
             description: Identification of plan specification result.
@@ -661,6 +763,7 @@ components:
           description: Identification of the specification of the executed plan
         resultSpecIds:
           type: array
+          uniqueItems: true
           items:
             type: string
             description: Identification of plan specification result.
