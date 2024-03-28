@@ -68,11 +68,11 @@ channels:
         payload:
           type: object
           description: The ADR definition.
+          additionalProperties: false
           required:
           - id
           - systemId
           - version
-          - ldrId
           - creationTs
           - activityType
           - activitySubType
@@ -119,6 +119,7 @@ channels:
           properties:
             id:
               type: string
+              format: uuid
               description: >
                 Unique identifier of the ADR.
                 <p>
@@ -130,7 +131,7 @@ channels:
               - MEOPCF
             version:
               type: string
-              pattern: /^\d+\.\d+$/
+              pattern: ^\d+\.\d+$
               description: >
                 ADR global specification version, in the format: `<Major>.<minor>`.\
                 
@@ -162,7 +163,7 @@ channels:
               description: Account that contains the product of the activity.
             productAccountTimeZone:
               type: string
-              pattern: /^[+-]\d{2}:\d{2}$/
+              pattern: ^[+-]\d{2}:\d{2}$
               description: Timezone associated to the product's account.
               examples: 
               - +00:00
@@ -229,7 +230,7 @@ channels:
                 - In **single event** scenarios, it is the instant associated with the event (i.e. equal to `activityStartTs`).
             activityTimeZone:
               type: string
-              pattern: /^[+-]\d{2}:\d{2}$/
+              pattern: ^[+-]\d{2}:\d{2}$
               description: Timezone associated to the activity.
               examples: 
               - +00:00
@@ -277,13 +278,15 @@ channels:
                 - In **single event** scenarios, it is the instant associated with the event.
             events:
               type: array
-              description: List of events
+              description: List of network events.
               items:
                 $ref: '#/components/schemas/Event'
             provisioning:
               $ref: '#/components/schemas/Provisioning'
-            policy:
+            smPolicyControl:
               $ref: '#/components/schemas/SMPolicyControl'
+            policyAuthorization:
+              $ref: '#/components/schemas/PolicyAuthorization'
             notifications:
               type: array
               items:
@@ -292,8 +295,8 @@ channels:
         - payload: 
             id: 2143ae4a-8f91-11ee-b9d1-0242ac120002
             systemId: MEOPCF
-            version: 1.1
-            creationTs: 2023-11-21T17:32:28.000Z
+            version: "1.1"
+            creationTs: "2023-11-21T17:32:28.000Z"
             correlationId: corr-40710e14-8f16-11ee-b9d1-0242ac120002
             productId: product-7463524
             productOfferingId: 188c66ee-8f18-11ee-b9d1-0242ac120002
@@ -303,28 +306,28 @@ channels:
             protocolSessionId: Session-706ba8fc-f82d-48e7-84dd-af34127250c6
             technicalCommunicationId: "960000001"
             communicationProducts:
-              id: "960000001"
+            - id: "960000001"
               type: MOBILE
             activityId: Req-bce51c6a-8f16-11ee-b9d1-0242ac120002
             activityType: ProductManagement
             activitySubType: CreateProduct
-            activityStartTs: 2023-11-21T17:32:28.000Z
-            activityEndTs: 2023-11-21T17:32:28.000Z
+            activityStartTs: "2023-11-21T17:32:28.000Z"
+            activityEndTs: "2023-11-21T17:32:28.000Z"
             activityTimeZone: +00:00
             activityBusinessResult:
               code: OK
               classification: SUCCESS
             segmentNumber: 1
-            segmentStartTs: 2023-11-21T17:32:28.000Z
-            segmentEndTs: 2023-11-21T17:32:28.000Z
+            segmentStartTs: "2023-11-21T17:32:28.000Z"
+            segmentEndTs: "2023-11-21T17:32:28.000Z"
             events:
-              id: 99ce7f3f-5ae9-458a-a02a-acafb2e2677c
-              activityTs: 2023-11-30T01:01:03.746Z
-              arrivalTs: 2023-11-30T01:01:07.746Z
+            - id: 99ce7f3f-5ae9-458a-a02a-acafb2e2677c
+              activityTs: "2023-11-30T01:01:03.746Z"
+              arrivalTs: "2023-11-30T01:01:07.746Z"
               eventType: Unique
               eventPayload: 
                 id: 1
-                activityTs: 2023-11-30T01:01:03.746Z
+                activityTs: "2023-11-30T01:01:03.746Z"
                 eventType: Unique
                 data:
                   value1: 1
@@ -348,45 +351,45 @@ channels:
                   - name: User
                     value: John
                   communicationProducts:
-                    id: "960000001"
+                  - id: "960000001"
                     type: mobile
-              policy:
-                sessionPart:
-                  sessionPolicies:
-                  - id: tl-123465
-                    specId: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
-                    eligibilityPlans:
-                    - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
-                      resultSpecId: 47761961-08ec-40b3-807f-5777a5d92c33
-                    sessionPlans:
-                    - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
-                      resultSpecIds:
-                      - 47761961-08ec-40b3-807f-5777a5d92c33
-                    notificationPlans: 
-                    - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
-                      resultSpecIds:
-                      - 47761961-08ec-40b3-807f-5777a5d92c33
-                  servicePolicies:
-                  - id: tl-123465
-                    specId: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
-                    servicePlans:
-                    - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
-                      resultSpecIds:
-                      - 47761961-08ec-40b3-807f-5777a5d92c33
-                    notificationPlans:
-                    - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
-                      resultSpecIds:
-                      - 47761961-08ec-40b3-807f-5777a5d92c33
-                  appliedEligibility:
-                    result: true
-                    reason: AUTHORIZED
-                  appliedPCCRules:
-                  - specId: 04bb4505-e880-496e-8aeb-260ff5728575
-                  appliedSessionRules:
-                  - specId: 04bb4505-e880-496e-8aeb-260ff5728575
-                  policyCounters:
-                  - id: counter-12345
-                    value: 100
+            smPolicyControl:
+              sessionPart:
+              - sessionPolicies:
+                - id: tl-123465
+                  specId: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
+                  eligibilityPlans:
+                  - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
+                    resultSpecId: 47761961-08ec-40b3-807f-5777a5d92c33
+                  sessionPlans:
+                  - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
+                    resultSpecIds:
+                    - 47761961-08ec-40b3-807f-5777a5d92c33
+                  notificationPlans: 
+                  - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
+                    resultSpecIds:
+                    - 47761961-08ec-40b3-807f-5777a5d92c33
+                servicePolicies:
+                - id: tl-123465
+                  specId: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
+                  servicePlans:
+                  - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
+                    resultSpecIds:
+                    - 47761961-08ec-40b3-807f-5777a5d92c33
+                  notificationPlans:
+                  - specId: 81455de9-46f8-4991-8f09-ff55eaa97039
+                    resultSpecIds:
+                    - 47761961-08ec-40b3-807f-5777a5d92c33
+                appliedEligibility:
+                  result: true
+                  reason: AUTHORIZED
+                appliedPCCRules:
+                - specId: 04bb4505-e880-496e-8aeb-260ff5728575
+                appliedSessionRules:
+                - specId: 04bb4505-e880-496e-8aeb-260ff5728575
+                policyCounters:
+                - id: counter-12345
+                  value: "100"
 
 components: 
   schemas:
@@ -423,11 +426,11 @@ components:
         activityTs:
           type: string
           format: UTCZ
-          description: Network event activity instant. This corresponds to the instant when the request arrived.
+          description: Network event activity instant. This corresponds to the instant the request arrived.
         arrivalTs:
           type: string
           format: UTCZ
-          description: Network event arrival/process instant. This corresponds to the instant when the request was handled (`activityTs <= arrivalTs`).
+          description: Network event arrival/process instant. This corresponds to the instant the request was handled (`activityTs <= arrivalTs`).
         eventType:
           type: string
           description: Nature of the network event.
@@ -635,8 +638,20 @@ components:
         sessionPart:
           type: array
           description: List of session segments.
+          minItems: 1
           items:
              $ref: '#/components/schemas/SessionPart'
+
+    PolicyAuthorization:
+      type: object
+      description: Service information associated with policy session N5.
+      properties:
+        sessionPart:
+          type: array
+          description: List of authorization session segments
+          minItems: 1
+          items:
+             $ref: '#/components/schemas/AuthorizationSessionPart'
     
     SessionPart:
       type: object
@@ -667,6 +682,30 @@ components:
           description: List of Policy Counters used.
           items:           
             $ref: '#/components/schemas/PolicyCounter'
+        ctg:
+          $ref: '#/components/schemas/Contingency'
+
+    Contingency:
+      description: Contingency
+      type: object
+      properties:
+        ctgDecision:
+          type: string
+          description: >
+            Contingency decision: Contingency (`CTG`) or Central (`CNT`).
+          enum:
+            - CTG
+            - CNT
+        sessionClosureType:
+          type: string
+          description: >
+            Session Closure Type.
+          enum:
+            - GRACIOUS
+            - RAR
+            - SILENT
+            - SWITCHING
+            - NONE
     
     SessionPolicy:
       type: object
@@ -809,6 +848,69 @@ components:
       examples:
       - id: counter-12345
         value: "100"
+
+    AuthorizationSessionPart:
+      description: Session policy authorization segment.
+      type: object
+      properties:
+        authorizationPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationPolicy'
+        appliedPCCRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedPCCRule'
+          description: >
+            Detailed information on PCC rules applied during sessions
+            (e.g., periods of time when the session were on 4G or 5G).
+        appliedSessionRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedSessionRule'
+          description: >
+            Detailed information on session rules applied during sessions.
+        eventId:
+          type: string
+          description: Id of event that originates this SessionPart.
+          example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
+        smPolicySession:
+          type: object
+          description: Session management policy decision.
+
+    AuthorizationPolicy:
+      description: Authorization policy activity.
+      type: object
+      properties:
+        id:
+          type: string
+          description: Top Level identification
+          example: tl-123465
+        specId:
+          type: string
+          description: Top Level specification id
+          example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
+        authorizationPlans:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationPlan'
+        eligibilityPlans:
+          type: array
+          items:
+            $ref: '#/components/schemas/EligibilityPlan'
+
+    AuthorizationPlan:
+      description: Authorization plan.
+      type: object
+      properties:
+        specId:
+          type: string
+          description:  Identification of the specification of the executed plan.
+          example: 81455de9-46f8-4991-8f09-ff55eaa97039
+        resultSpecId:
+          type: string
+          description: Identification of plan specification result.
+          example: 47761961-08ec-40b3-807f-5777a5d92c33
     
     Notification:
       type: object
