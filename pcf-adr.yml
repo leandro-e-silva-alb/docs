@@ -26,22 +26,24 @@ channels:
         description: >
           <details>
           <summary><u>ADR and LDR context:</u></summary>
-          <b>LDR (Local Data Record)</b> are local records created by each activity that occurs in the system with all the information arising from that activity. They contain a large amount of information in order to include resubmissions for correction and cancellation of actions, but also for diagnostic purposes.
+          <b>LDR (Local Data Record)</b> is a local record created by an activity that occurs in the system with all the information arising from that activity. Contains a large amount of information in order to include resubmissions for correction and cancellation of actions, but also for diagnostic purposes.
           <br>
-          Each system participates in diverse business processes with multiple activities (process = Σ activities). Since each activity generates a LDR, different LDRs created by different systems are enforced to be correlative to group LDRs from the same business process.
+          Some activities may generate a sequence of LDRs due to event updates during the activity (<b>session scenarios</b>). When an update is required, if the activity's last LDR was not yet published, this LDR is modified with the event's information. If it was already published, a new LDR is created with the event's information and the context of the last LDR.
+          <br>
+          Each system participates in diverse <b>business processes</b> with multiple activities (process = Σ activities). Since each activity generates one or more LDRs, different LDRs created by different systems are enforced to be correlative to group LDRs from the same business process.
           <p>
-          <b>ADR (Activity Data Record)</b> are similar to LDRs. They are generated from LDRs and published externally, for third-party systems. While LDR are hardcoded in the own system (non-parameterizable), the structure of ADRs is decided by parameterization, via OMS (Operational & Maintenance System), with versioning. 
+          <b>ADR (Activity Data Record)</b> is a LDR conversion. It is generated from one LDR and published externally, for third-party systems. While LDRs are hardcoded in the own system (non-parameterizable), the structure of ADRs is decided by parameterization, via OMS (Operational & Maintenance System), with versioning. 
           <br>
-          Depending on the ADR type/scenario, some fields may be absent or optional. There are multiple types of ADRs, commonly grouped as follows: 
+          Depending on the <b>ADR type/scenario</b>, some fields may be absent or optional. There are multiple types of ADRs, commonly grouped as follows: 
           <ul>
-          <li> <b>service activity</b> ADRs, which includes <code>SMPolicyControl</code>, <code>PolicyAuthorization</code>, and <code>Charging</code>;
-          <li> <b>provision</b> ADRs, which includes <code>AccountManagement</code> (for <i>Account</i> provisions), <code>ProductManagement</code> (for <i>Product</i> and <i>TopLevel</i> provisions), and <code>BucketManagement</code>; and
+          <li> <b>service</b> ADRs, which include <code>SMPolicyControl</code>, <code>PolicyAuthorization</code>, and <code>Charging</code> activities;
+          <li> <b>provision</b> ADRs, which includes <code>AccountManagement</code>, <code>ProductManagement</code>, and <code>BucketManagement</code> activities; and
           <li> <b>top-up</b> ADRs.
           </ul>
           In terms of scenarios, there are two:
           <ul>
-          <li> <b>single event</b> scenarios, where there is no session (e.g., <b>provision</b> ADRs, <b>top-up</b> ADRs); and
-          <li> <b>session</b> scenarios (e.g., <b>service activity</b> ADRs).
+          <li> <b>single event</b> scenarios, which include <code>Unique</code> events (e.g., <b>provision</b> ADRs, <b>top-up</b> ADRs); and
+          <li> <b>session</b> scenarios, which include <code>Initial</code>, <code>Intermediate</code>, and <code>Final</code> events (e.g., <b>service</b> ADRs).
           </ul>
           </details>
         externalDocs:
@@ -67,7 +69,7 @@ channels:
               minimum: 0
         payload:
           type: object
-          description: The ADR definition.
+          description: An ADR message.
           additionalProperties: false
           required:
           - id
@@ -85,14 +87,20 @@ channels:
                   activityType:
                     const: "AccountManagement"
                   activitySubType:
-                    enum: ['CreateAccount', 'UpdateAccount']
+                    enum: ['CreateAccount', 'UpdateAccount', 'RemoveAccount']
               - title: ProductManagement ADR
                 properties:
                   activityType:
                     const: "ProductManagement"
                   activitySubType:
-                    enum: ['CreateProduct', 'UpdateProduct']
-              - title: SMPolicyControl ADR
+                    enum: ['CreateProduct', 'UpdateProduct', 'RemoveProduct']
+              - title: BucketManagement ADR
+                properties:
+                  activityType:
+                    const: "BucketManagement"
+                  activitySubType:
+                    enum: ['CreditBucket', 'DebitBucket', 'CreditSlice', 'DebitSlice', 'AdjustValiditySlice', 'UpdateSlice', 'RemoveSlice']
+              - title: Policy ADR
                 properties:
                   activityType:
                     const: "SMPolicyControl"
@@ -115,7 +123,7 @@ channels:
               properties:
                 version:
                   type: string
-                  const: 1.2
+                  const: "1.2"
           properties:
             id:
               type: string
@@ -123,7 +131,7 @@ channels:
               description: >
                 Unique identifier of the ADR.
                 <p>
-                _Note:_ it is coincident to the source LDR identifier.
+                _Developer Note:_ It is coincident to the source LDR identifier.
             systemId:
               type: string
               description: System identifier. Useful on deployments, where there are multiple systems.
@@ -139,16 +147,16 @@ channels:
             creationTs:
               type: string
               description: >
-                LDR creation instant.
+                LDR creation timestamp.
                 <p>
-                _Note:_ <u>Not</u> the publish instant, <u>nor</u> the LDR to ADR transformation instant.
+                _Note:_ <u>Not</u> the publish timestamp, <u>nor</u> the LDR to ADR transformation timestamp.
               format: UTCZ
             correlationId:
               type: string
               description: >
-                Identifier to associate this ADR with other records of other activities. Two ADRs from the same business process, but produced asynchronously in different activities/systems, can be associated.
+                Identifier to associate this ADR with other ADRs from other activities but same business process. This enables two ADRs from the same business process, but produced asynchronously in different activities/systems, to be associated.
                 <p>
-                _Example:_ when the ASM receives a request for a provision activity, it has to create an LDR with a `correlationId` and propagate that to the CCS and PCF systems. These systems will then create their own LDRs with the same `correlationId`.
+                _Example:_ When the ASM receives a request for a provision activity, it has to create an LDR with a `correlationId` and propagate that to the CCS and PCF systems. These systems will then create their own LDRs with the same `correlationId`.
             productId:
               type: string
               description: >
@@ -172,7 +180,7 @@ channels:
               description: >
                 The billing account identifier related to the activity. Specific for billing purposes only where an hierarchical structure of accounts is needed.
                 <p>
-                _Example:_ when a set of accounts are connected to a reseller account (meaning that every account, including the reseller account, has the `billingAccountId` equal to the reseller account identifier) the billing is unified on a single invoice belonging to the reseller account.
+                _Example:_ When a set of accounts are connected to a reseller account (meaning that every account, including the reseller account, has the `billingAccountId` equal to the reseller account identifier) the billing is unified on a single invoice belonging to the reseller account.
             protocolSessionId:
               type: string
               description: Protocol network session identifier.
@@ -180,7 +188,7 @@ channels:
               type: string
               description: Technical identifier of the UE (e.g., MSISDN, IMSI, etc.) that used the service. <u>Only required</u> in **service activity** records.\
 
-                This allows the service request to be associated with the _TopLevel_ set responsible for processing it. If `communicationProducts` is present, this should match one of the `communicationProducts[].id` values.
+                This allows the service request to be associated with the _Top-level_ set responsible for processing it. If `communicationProducts` is present, this should match one of the `communicationProducts[].id` values.
                 <p>
                 _Note:_ The way to obtain the value of this attribute must be deterministic and explicitly configured in the TC (at the _Service Criteria_ level).
               examples: 
@@ -197,7 +205,10 @@ channels:
 
                 - In **session** scenarios, it is the session identifier.
 
-                - In **single event** scenarios, it is the event identifier.        
+                - In **single event** scenarios, it is the event identifier.
+
+                
+                _Developer Note:_ Sometimes associated to `serviceSessionId`.   
             activityType:
               type: string
               description: Describes the activity performed.
@@ -209,23 +220,28 @@ channels:
                 - SpendingLimit
             activitySubType:
               type: string
-              description: Describes the nature of the activity type. The value depends on the `activityType` value. 
+              description: Describes the nature of the activity type. The values allowed <u>depend</u> on the `activityType` value. 
+              examples:
+                - CreateAccount
+                - RemoveProduct
+                - CreditBucket
+                - DebitSlice
             activityStartTs:
               type: string
               format: UTCZ
               description: >
-                Activity start time instant (entire session).
+                Activity start timestamp (entire session).
 
-                - In **session** scenarios, it is the beginning of the session. Intermediate records in a session (due to limit of consumption, time, or events) fill this field with the TS at the beginning of the session.
+                - In **session** scenarios, it is the beginning of the session. `Intermediate` events in a session (due to limit of consumption, time, or events) fill this field with the timestamp at the beginning of the session.
 
                 - In **single event** scenarios, it is the instant associated with the event.
             activityEndTs:
               type: string
               format: UTCZ
               description: >
-                Activity end time instant. This field is only filled in the last segment of this activity.
+                Activity end timestamp. This field is only filled in the last segment of this activity.
 
-                - In **session** scenarios, it is the end of the session. Intermediate records in a session (due to limit of consumption, time, or events) <u>do not</u> fill in this field.
+                - In **session** scenarios, it is the end of the session. `Intermediate` events in a session <u>do not fill</u> in this field.
 
                 - In **single event** scenarios, it is the instant associated with the event (i.e. equal to `activityStartTs`).
             activityTimeZone:
@@ -255,30 +271,29 @@ channels:
               type: integer
               minimum: 1
               description: >
-                Index for the part (segment) of the activity to which the record refers.
-
-                - In **session** scenarios, several intermediate records can be generated (limit of consumption, time, or events).
+                Index for the part (segment) of the activity to which the ADR refers. Important for **session** scenarios, where there is a sequence of ADRs for the same activity.
             segmentStartTs:
               type: string
               format: UTCZ
               description: >
-                Instant of the activity associated with the beginning of the segment.
+                Timestamp of the activity associated with the beginning of the segment.
 
                 - In **session** scenarios, it is the instant associated with the beginning of the segment (at the beginning of the session, it is equal to `activityStartTs`).
 
-                - In **single event** scenarios, it is the instant associated with the event.
+                - In **single event** scenarios, it is the instant associated with the event (i.e. equal to `activityStartTs` and `activityEndTs`).
             segmentEndTs:
               type: string
               format: UTCZ
               description: >
-                Instant of the activity associated with the end of the segment.
+                Timestamp of the activity associated with the end of the segment.
 
                 - In **session** scenarios, it is the instant associated with the end of the segment (at the end of the session, the end of the segment is equal to `activityEndTs`).
 
-                - In **single event** scenarios, it is the instant associated with the event.
+                - In **single event** scenarios, it is the instant associated with the event (i.e. equal to `activityStartTs` and `activityEndTs`).
             events:
               type: array
-              description: List of network events.
+              description: >
+                List of network events (requests) from the same activity that created/updated the LDR.
               items:
                 $ref: '#/components/schemas/Event'
             provisioning:
@@ -339,7 +354,7 @@ channels:
                 code: CLIENT
                 description: Customer request
               items:
-              - operation: CREATE
+              - operation: Create
                 type: Account
                 entity:
                   id: 8a1baff3-d8a4-4330-95c6-744b7e6b9493
@@ -414,6 +429,7 @@ components:
 
     Event:
       type: object
+      description: A network event (request) that started/modified an activity in the system.
       required:
       - activityTs
       - arrivalTs
@@ -426,14 +442,18 @@ components:
         activityTs:
           type: string
           format: UTCZ
-          description: Network event activity instant. This corresponds to the instant the request arrived.
+          description: Network event activity timestamp. This corresponds to the instant the request arrived.
         arrivalTs:
           type: string
           format: UTCZ
-          description: Network event arrival/process instant. This corresponds to the instant the request was handled (`activityTs <= arrivalTs`).
+          description: Network event arrival/process timestamp. This corresponds to the instant the request was handled (`activityTs <= arrivalTs`).
         eventType:
           type: string
-          description: Nature of the network event.
+          description: >
+            Service request type. Used to indicate if the request belongs to:
+              - a **single event** (`Unique`); or
+
+              - a **session** that is starting (`Initial`), ongoing (`Intermediate`), or finishing (`Final`).
           enum: 
             - Unique
             - Initial
@@ -443,12 +463,14 @@ components:
           type: object
           additionalProperties: true
           description: >
-            Internal representation of the network event that arrived at the system converted by the Protocol Mapper.
+            Internal representation of the network event (request payload) that arrived at the system converted by the Protocol Mapper. 
+            <p>
+            _Example:_ For ADRs from `PolicyAuthorization` activities, may contain information from `PolicyAuthorizationRequest` or `PolicyAuthorizationNotifRequest`.
          
     
     Provisioning:
       type: object
-      description: Provisioning information.
+      description: Provisioning information...
       required:
       - channel
       - subChannel
@@ -459,7 +481,7 @@ components:
           description: >
             Channel system classification passed by parameter in the provision operation.
             <p>
-            _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to each system.
+            _Note:_ The value <u>is not enforced</u>. The choice of how to use this is left to the provisioning external systems.
           examples: 
           - Shop
         subChannel:
@@ -467,7 +489,7 @@ components:
           description: >
             Subchannel system classification passed by parameter in the provision operation.
             <p>
-            _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to each system.
+            _Note:_ The value <u>is not enforced</u>. The choice of how to use this is left to the provisioning external systems.
           examples: 
           - Web
         reason:
@@ -475,7 +497,7 @@ components:
           description: >
             Provisioning reason.
             <p>
-            _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to each system.
+            _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to the provisioning external systems.
           required:
           - code
           properties:
@@ -492,7 +514,7 @@ components:
               - Customer request
         items:
           type: array
-          description: List of provisioned entities (e.g., _Account_, _Product_, _TopLevel_).
+          description: List of provisioned entities (e.g., _Account_, _Product_, _Top-level_).
           items:
             description: provisioning item
             type: object
@@ -503,23 +525,26 @@ components:
               operation:
                 type: string
                 description: Provisioned operation.
-                examples: 
-                - CREATE
-                - UPDATE
+                enum: 
+                - Create
+                - Update
+                - Delete
               type:
                 type: string
                 description: Provisioned entity type.
-                examples:
+                enum:
                 - Account
                 - Product
                 - ServicePolicy
+                - AuthorizationPolicy
+                - SessionPolicy
+              entityId: 
+                type: string
+                format: uuid
+                description: External identifier of the entity.
               entity:
                 type: object
                 description: Representation of the entity result after its changes.
-                properties:
-                  ID: 
-                    type: string
-                    description: Identifier of the entity in the system (`ExagonEntity` identifier).
                 oneOf:
                 - title: Account
                   description: >
@@ -532,12 +557,12 @@ components:
                         type: string
                     billingAccountId:
                       type: string
-                    creationDate:
+                    creationTs:
                       type: string
                       format: utcz
                     entries:
                       type: object
-                      description: A map with the entries name from the account offer template as keys and the values prescribed??
+                      description: A map with additional information to describe this account.
                       additionalProperties:
                         type: string
                       examples:
@@ -548,14 +573,14 @@ components:
                   properties:
                     accountId:
                       type:	string	
-                    creationDate:
+                    creationTs:
                       type: string
                       format: utcz
                     parentProductId:
                       type: string	
                     productOfferingSpecId:
                       type: string
-                      description: The 
+                      description: The...
                     servicePolicyIds:
                       type: array
                       uniqueItems: true
@@ -572,14 +597,14 @@ components:
                         $ref: '#/components/schemas/CommunicationProduct'
                     entries:
                       type: object
-                      description: A map with the entries name from the product offer template as keys and the values prescribed??
+                      description: A map with additional information to describe this product.
                       additionalProperties:
                         type: string
                       examples:
                       - name: agreement 123
-                - title: TopLevel
+                - title: Top-level
                   description: >
-                    _TopLevel_ representation. Conforms to all _TopLevel_ entities: `AuthorizationPolicy`, `ServicePolicy`, and `SessionPolicy`.
+                    _Top-level_ representation. Conforms to all _Top-level_ entities: `AuthorizationPolicy`, `ServicePolicy`, and `SessionPolicy`.
                   properties:
                     specId:
                       type: string
@@ -587,19 +612,19 @@ components:
                       type: string
                     productId:
                       type: string
-                    creationDate:
+                    creationTs:
                       type: string
                       format: utcz
-                    startDate:
+                    startTs:
                       type: string
                       format: utcz
-                    endDate:
+                    endTs:
                       type: string
                       format: utcz
-                    suspendedDate:
+                    suspendedTs:
                       type: string
                       format: utcz
-                    releaseDate:
+                    releaseTs:
                       type: string
                       format: utcz
                     adminStatus:
@@ -625,7 +650,7 @@ components:
                             type: string
                     entries:
                       type: object
-                      description: A map with the entries name from the toplevel offer template as keys and the values prescribed??
+                      description: A map with the entries name from the _Top-level_ offer template as keys and the values prescribed??
                       additionalProperties:
                         type: string
     
@@ -637,7 +662,7 @@ components:
       properties:
         sessionPart:
           type: array
-          description: List of session segments.
+          description: List of session segments. Anytime an event updates the ADR, a new entry is created in this list.
           minItems: 1
           items:
              $ref: '#/components/schemas/SessionPart'
@@ -648,14 +673,14 @@ components:
       properties:
         sessionPart:
           type: array
-          description: List of authorization session segments
+          description: List of authorization session segments. Anytime a `Polic` event updates the ADR, a new entry is created in this list.
           minItems: 1
           items:
              $ref: '#/components/schemas/AuthorizationSessionPart'
     
     SessionPart:
       type: object
-      description: Session policy segment.
+      description: Session _Policy_ segment...
       properties:
         sessionPolicies:
           type: array
@@ -679,14 +704,45 @@ components:
             $ref: '#/components/schemas/AppliedSessionRule'
         policyCounters:
           type: array
-          description: List of Policy Counters used.
+          description: List of _Policy Counters_ used...
           items:           
             $ref: '#/components/schemas/PolicyCounter'
         ctg:
           $ref: '#/components/schemas/Contingency'
 
+    AuthorizationSessionPart:
+      description: Session _Policy Authorization_ segment...
+      type: object
+      properties:
+        authorizationPolicies:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthorizationPolicy'
+        appliedPCCRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedPCCRule'
+          description: >
+            Detailed information on PCC rules applied during sessions
+            (e.g., periods of time when the session were on 4G or 5G).
+        appliedSessionRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppliedSessionRule'
+          description: >
+            Detailed information on session rules applied during sessions.
+        eventId:
+          type: string
+          description: Identifier of the event that originated this _Session Part_.
+          example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
+        smPolicySession:
+          type: object
+          description: _Session Management Policy_ decision...
+          examples:
+          - ...
+
     Contingency:
-      description: Contingency
+      description: Contingency...
       type: object
       properties:
         ctgDecision:
@@ -709,40 +765,40 @@ components:
     
     SessionPolicy:
       type: object
-      description: Session policy activity.
+      description: Session policy activity...
       properties:
         id:
           type: string
-          description: Top Level unique identifier.
+          description: _Top-level_ unique identifier.
         specId:
           type: string
-          description: Top Level specification identifier.
+          description: _Top-level_ specification identifier.
         eligibilityPlans:
           type: array
-          description: List of executed Eligibility Plans.
+          description: List of executed _Eligibility Plans_.
           items:
             $ref: '#/components/schemas/EligibilityPlan'
         sessionPlans:
           type: array
-          description: List of executed Session Plans.
+          description: List of executed _Session Plans_.
           items:
             $ref: '#/components/schemas/SessionPlan'
         notificationPlans:
           type: array
-          description: List of executed Notification Plans.
+          description: List of executed _Notification Plans_.
           items:
             $ref: '#/components/schemas/NotificationPlan'
     
     ServicePolicy:
       type: object
-      description: Service policy activity.
+      description: Service policy activity...
       properties:
         id:
           type: string
-          description: Top Level unique identifier.
+          description: _Top-level_ unique identifier.
         specId:
           type: string
-          description: Top Level specification identifier.
+          description: _Top-level_ specification identifier.
         servicePlans:
           type: array
           description: List of executed Service Plans.
@@ -756,7 +812,7 @@ components:
     
     EligibilityPlan:
       type: object
-      description: Eligibility plan.
+      description: Eligibility plan...
       properties:
         specId:
           type: string
@@ -767,7 +823,7 @@ components:
     
     SessionPlan:
       type: object
-      description: Session plan.
+      description: Session plan...
       properties:
         specId:
           type: string
@@ -781,7 +837,7 @@ components:
     
     ServicePlan:
       type: object
-      description: service plan
+      description: Service plan...
       properties:
         specId:
           type: string
@@ -795,7 +851,7 @@ components:
     
     NotificationPlan:
       type: object
-      description: Notification plan.
+      description: Notification plan...
       properties:
         specId:
           type: string
@@ -809,7 +865,7 @@ components:
     
     AppliedEligibility:
       type: object
-      description: Applied eligibility.
+      description: Applied eligibility...
       properties:
         result:
           type: boolean
@@ -822,73 +878,45 @@ components:
     
     AppliedPCCRule:
       type: object
-      description: The PCC rules used. A PCC Rule is a rule associated with policies to define the control of the service (e.g., charging 64Kbps).
+      description: _PCC Rules_ used. A _PCC Rule_ is a rule associated with policies to define the control of the service (e.g., charging 64Kbps).
       properties:
         specId:
           type: string
-          description: Identifier of the applied PCC Rule specification.
+          description: Identifier of the applied _PCC Rule's Specification_.
     
     AppliedSessionRule:
       type: object
+      description: ...
       properties:
         specId:
           type: string
-          description: Identifier of the applied Session Rule specification.
+          description: Identifier of the applied _Session Rule's Specification_.
     
     PolicyCounter:
       type: object
-      description: A Policy Counter is used to store any number relevant to the business (e.g., the number of Octets spent by the subscriber on a specific service).
+      description: A _Policy Counter_ is used to store any number relevant to the business (e.g., the number of Octets spent by the subscriber on a specific service).
       properties:
         id:
           type: string
-          description: Policy Counter identifier.
+          description: _Policy Counter_ identifier.
         value:
           type: string
-          description: Policy Counter value.
+          description: _Policy Counter_ value.
       examples:
-      - id: counter-12345
-        value: "100"
-
-    AuthorizationSessionPart:
-      description: Session policy authorization segment.
-      type: object
-      properties:
-        authorizationPolicies:
-          type: array
-          items:
-            $ref: '#/components/schemas/AuthorizationPolicy'
-        appliedPCCRules:
-          type: array
-          items:
-            $ref: '#/components/schemas/AppliedPCCRule'
-          description: >
-            Detailed information on PCC rules applied during sessions
-            (e.g., periods of time when the session were on 4G or 5G).
-        appliedSessionRules:
-          type: array
-          items:
-            $ref: '#/components/schemas/AppliedSessionRule'
-          description: >
-            Detailed information on session rules applied during sessions.
-        eventId:
-          type: string
-          description: Id of event that originates this SessionPart.
-          example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
-        smPolicySession:
-          type: object
-          description: Session management policy decision.
+      - id: balance-123
+        value: Low
 
     AuthorizationPolicy:
-      description: Authorization policy activity.
+      description: _Policy Authorization_ activity...
       type: object
       properties:
         id:
           type: string
-          description: Top Level identification
+          description: _Top-level_ identification
           example: tl-123465
         specId:
           type: string
-          description: Top Level specification id
+          description: _Top-level_ specification id
           example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
         authorizationPlans:
           type: array
@@ -900,7 +928,7 @@ components:
             $ref: '#/components/schemas/EligibilityPlan'
 
     AuthorizationPlan:
-      description: Authorization plan.
+      description: _Authorization Plan_...
       type: object
       properties:
         specId:
@@ -919,46 +947,44 @@ components:
       properties:
         id:
           type: string
-          description: The unique identifier for the notification.
+          description: Unique identifier for the notification.
         channel:
           type: string
-          description: The channel through which the notification is sent.
+          description: Channel through which the notification is sent.
           examples: 
           - SMS
           - EMAIL
         originator:
           type: string
-          description: The originator address for the notification (email or phone number/large account).
+          description: Originator address for the notification (email or phone number/large account).
           examples: 
-          - "103"
+          - "103..."
         destinations:
           type: array
           items:
             type: string
-          description: The list of destination addresses for the notification (emails or phone numbers).
+          description: List of destination addresses for the notification (emails or phone numbers).
           examples:
           - "961234567"
         subject:
           type: string
-          description: The subject of the notification (only applicable for email notifications).
-          examples: 
-          - email subject
+          description: Subject of the notification. <u>Only applicable</u> for email notifications.
         message:
           type: string
-          description: The content of the notification message.
+          description: Content of the notification message.
           examples: 
           - Insufficient balance. Please recharge. Thanks.
         publishTs:
           type: string
           format: utcz
-          description: The timestamp when the notification is published.
+          description: Timestamp when the notification is published.
         validityTs:
           type: string
           format: utcz
-          description: The timestamp indicating the validity of the notification message.
+          description: Timestamp indicating the validity of the notification message.
         dispatchPeriods:
           type: array
-          description: The periods during which the notification can be dispatched.
+          description: Periods during which the notification can be dispatched.
           minItems: 1
           items:
             type: object
@@ -966,26 +992,26 @@ components:
               startTs:
                 type: string
                 format: UTCZ
-                description: The start timestamp of the dispatch period.
+                description: Start timestamp of the dispatch period.
               endTs:
                 type: string
                 format: UTCZ
-                description: The end timestamp of the dispatch period.
+                description: End timestamp of the dispatch period.
         ntfTopLevelSpecId:
           type: string
-          description: The identifier for the notification top-level spec.
+          description: Identifier of the _Top-level Specification_.
         ntfTopLevelSpecVersion:
           type: string
-          description: The version of the notification top-level spec.
+          description: Version of the _Top-level Specification_.
         ntfPlanSpecId:
           type: string
-          description: The identifier for the notification plan spec.
+          description: Identifier of the _Plan Specification_.
         ntfPlanSpecVersion:
           type: string
-          description: The version of the notification plan spec.
+          description: Version of the _Plan Specification_.
         ntfResultSpecId:
           type: string
-          description: The identifier for the notification result spec.
+          description: Identifier of the _Result Specification_.
         ntfResultSpecVersion:
           type: string
-          description: The version of the notification result spec.
+          description: Version of the _Result Specification_.
