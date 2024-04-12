@@ -141,7 +141,7 @@ channels:
               type: string
               pattern: ^\d+\.\d+$
               description: >
-                ADR global specification version, in the format: `<Major>.<minor>`.\
+                ADR global _Specification_ version, in the format: `<Major>.<minor>`.\
                 
                 When there are changes that do not break backward compatibility, the **minor** version will be increased, otherwise, the **Major**  version will be increased.
             creationTs:
@@ -194,7 +194,7 @@ channels:
               examples: 
               - "960000001"
             communicationProducts:
-              description: List of public identifiers of the communication devices (UEs) with the product subscription. <u>Required</u> in **provision** records, but <u>optional</u> in **service activity** records.
+              description: Public identifiers of the communication devices (UEs) with the product subscription. <u>Required</u> in **provision** records, but <u>optional</u> in **service activity** records.
               type: array
               items:
                 $ref: '#/components/schemas/CommunicationProduct'
@@ -290,15 +290,6 @@ channels:
                 - In **session** scenarios, it is the instant associated with the end of the segment. At the end of the session (`Final` event), it is equal to `activityEndTs`.
 
                 - In **single event** scenarios, it is the instant associated with the event (i.e. equal to `activityStartTs` and `activityEndTs`).
-            events:
-              type: array
-              minItems: 1
-              description: >
-                List of <u>all</u> network events (requests) from the same activity that created/updated the LDR.
-                <p>
-                _Note:_ In a sequence of ADRs with the same activity (**session** scenario), every ADR <u>must contain</u> the events from the previous ADR. 
-              items:
-                $ref: '#/components/schemas/Event'
             provisioning:
               $ref: '#/components/schemas/Provisioning'
             smPolicyControl:
@@ -307,6 +298,7 @@ channels:
               $ref: '#/components/schemas/PolicyAuthorization'
             notifications:
               type: array
+              description: _Notifications_ that were sent due to the activation of one or more _Notification Plans_.
               items:
                 $ref: '#/components/schemas/Notification'
         examples:
@@ -338,18 +330,6 @@ channels:
             segmentNumber: 1
             segmentStartTs: "2023-11-21T17:32:28.000Z"
             segmentEndTs: "2023-11-21T17:32:28.000Z"
-            events:
-            - id: 99ce7f3f-5ae9-458a-a02a-acafb2e2677c
-              activityTs: "2023-11-30T01:01:03.746Z"
-              arrivalTs: "2023-11-30T01:01:07.746Z"
-              eventType: Unique
-              eventPayload: 
-                id: 1
-                activityTs: "2023-11-30T01:01:03.746Z"
-                eventType: Unique
-                data:
-                  value1: 1
-                  value2: 2
             provisioning:
               channel: Shop
               subChannel: Web
@@ -430,46 +410,6 @@ components:
         description: GitHub - CommunicationProduct v1.15
         url: https://github.com/AlticeLabsProjects/ccp-common-models/blob/v1.15/src/main/java/com/alticelabs/ccp/common_models/types/CommunicationProduct.java
 
-    Event:
-      type: object
-      description: A network event (request) that started/modified an activity in the system.
-      required:
-      - activityTs
-      - arrivalTs
-      - eventType
-      - eventPayload
-      properties:
-        id:
-          type: string
-          description: Network event identifier.
-        activityTs:
-          type: string
-          format: UTCZ
-          description: Network event activity timestamp. This corresponds to the instant the request arrived.
-        arrivalTs:
-          type: string
-          format: UTCZ
-          description: Network event arrival/process timestamp. This corresponds to the instant the request was handled (`activityTs <= arrivalTs`).
-        eventType:
-          type: string
-          description: >
-            Service request type. Used to indicate if the request belongs to:
-              - a **single event** (`Unique`); or
-
-              - a **session** that is starting (`Initial`), ongoing (`Intermediate`), or finishing (`Final`).
-          enum: 
-            - Unique
-            - Initial
-            - Final
-            - Intermediate
-        eventPayload:
-          type: object
-          additionalProperties: true
-          description: >
-            Internal representation of the network event (request payload) that arrived at the system converted by the Protocol Mapper. 
-            <p>
-            _Example:_ For ADRs from `PolicyAuthorization` activities, may contain information from `PolicyAuthorizationRequest` or `PolicyAuthorizationNotifRequest`.
-    
     Provisioning:
       type: object
       description: Provisioning information...
@@ -516,7 +456,7 @@ components:
               - Customer request
         items:
           type: array
-          description: List of provisioned entities (e.g., _Account_, _Product_, _Top-level_).
+          description: Provisioned entities (e.g., _Account_, _Product_, _Top-level_).
           items:
             description: provisioning item
             type: object
@@ -555,6 +495,7 @@ components:
                     productIds: 
                       type: array
                       uniqueItems: true
+                      description: Indentifiers of the products subscribed by the _Account_ (agreements).
                       items:
                         type: string
                     billingAccountId:
@@ -658,40 +599,52 @@ components:
     
     SMPolicyControl:
       type: object
-      description: Service information associated with policy session N7 and N28.
+      description: Service information associated with policy session (N7 and N28 reference points).
       required:
         - sessionPart
       properties:
         sessionPart:
           type: array
-          description: List of session segments. Anytime a `SMPolicyRequest` event updates the LDR, a new entry is created in this list.
+          description: >
+            Portions of the policy session under the same policies.
+            <p>
+            _Note:_ The length of this array cannot be correlated to the `segmentNumber`, since an event update may not increase this number depending on the rules defined on OMS.
+            <p> 
+            _Developer Note:_ Anytime a `SMPolicyRequest` event updates the LDR, a new entry is created in this list.
           minItems: 1
           items:
              $ref: '#/components/schemas/SessionPart'
 
     PolicyAuthorization:
       type: object
-      description: Service information associated with policy session N5.
+      description: Service information associated with authorization policy session (N5 reference point).
       properties:
         sessionPart:
           type: array
-          description: List of authorization session segments. Anytime a `PolicyAuthorizationRequest` event updates the LDR, a new entry is created in this list.
+          description: >
+            Portions of the authorization policy session under the same policies.
+            <p>
+            _Note:_ The length of this array cannot be correlated to the `segmentNumber`, since an event update may not increase this number depending on the rules defined on OMS.
+            <p> 
+            _Developer Note:_ Anytime a `PolicyAuthorizationRequest` event updates the LDR, a new entry is created in this list.
           minItems: 1
           items:
              $ref: '#/components/schemas/AuthorizationSessionPart'
     
     SessionPart:
       type: object
-      description: Session _Policy_ segment...
+      description: Portion of a policy session under the same policies.
       properties:
         sessionPolicies:
           type: array
-          description: List of _Session Policy_  _Top-level_ found and used to handle the activity.
+          description: > 
+            _Top-levels_ of _Session Policy_ type encountered and employed to handle the activity.
           items:
             $ref: '#/components/schemas/SessionPolicy'
         servicePolicies:
           type: array
-          description: List of _Service Policy_  _Top-level_ found and used to handle the activity.
+          description: >
+            _Top-levels_ of _Service Policy_ type encountered and employed to handle the activity.
           items:
             $ref: '#/components/schemas/ServicePolicy'
         appliedEligibility:
@@ -708,7 +661,7 @@ components:
             $ref: '#/components/schemas/AppliedSessionRule'
         policyCounters:
           type: array
-          description: List of _Policy Counters_ used...
+          description: _Policy Counters_ used on the executed _Plans_.
           items:           
             $ref: '#/components/schemas/PolicyCounter'
         ctg:
@@ -733,16 +686,13 @@ components:
                 - SWITCHING
                 - NONE
     AuthorizationSessionPart:
-      description: Session _Policy Authorization_ segment...
+      description: Portion of a authorization policy session under the same policies.
       type: object
       properties:
-        eventId:
-          type: string
-          description: Identifier of the event that originated this _Session Part_.
-          example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
         authorizationPolicies:
           type: array
-          description: List of _Policy Authorization_  _Top-level_ found and used to handle the activity.
+          description: >
+            _Top-levels_ of _Policy Authorization_ type encountered and employed to handle the activity.
           items:
             $ref: '#/components/schemas/AuthorizationPolicy'
         appliedPCCRules:
@@ -767,30 +717,34 @@ components:
           
 
     AuthorizationPolicy:
-      description: Description of the _Policy Authorization_  _Top-level_ and the belonging _Plans_ that were executed to handle some activity.
+      description: >
+        Description of the _Top-level_ of _Policy Authorization_ type and the belonging _Plans_ that were executed to handle some activity.\
+
+        _Authorization Policies_ are...
       type: object
       properties:
         id:
           type: string
           description: _Top-level_ identifier.
-          example: tl-123465
         specId:
           type: string
           description: _Top-level_ _Specification_ identifier.
-          example: 12e1a82c-4feb-4a57-aa78-3b700e0d5623
         authorizationPlans:
           type: array
-          description: List of executed _Authorization Plans_ from the _Top-level_ _Specification_.
+          description: Executed _Authorization Plans_ from the _Top-level_ _Specification_.
           items:
             $ref: '#/components/schemas/AuthorizationPlan'
         eligibilityPlans:
           type: array
-          description: List of executed _Eligibility Plans_ from the _Top-level_ _Specification_.
+          description: Executed _Eligibility Plans_ from the _Top-level_ _Specification_.
           items:
             $ref: '#/components/schemas/EligibilityPlan'
     ServicePolicy:
       type: object
-      description: Description of the _Service Policy_  _Top-level_ and the belonging _Plans_ that were executed to handle some activity.
+      description: >
+        Description of the _Top-level_ of _Service Policy_ type and the belonging _Plans_ that were executed to handle some activity.\
+
+        _Service Policies_ act almost like _Session Policy_ modifiers...
       properties:
         id:
           type: string
@@ -800,17 +754,20 @@ components:
           description: _Top-level_ _Specification_ identifier.
         servicePlans:
           type: array
-          description: List of executed _Service Plans_ from the _Top-level_ _Specification_.
+          description: Executed _Service Plans_ from the _Top-level_ _Specification_.
           items:
             $ref: '#/components/schemas/SessionPlan'
         notificationPlans:
           type: array
-          description: List of executed _Notification Plans_ from the _Top-level_ _Specification_.
+          description: Executed _Notification Plans_ from the _Top-level_ _Specification_.
           items:
             $ref: '#/components/schemas/NotificationPlan'
     SessionPolicy:
       type: object
-      description: Description of the _Session Policy_  _Top-level_ and the belonging _Plans_ that were executed to handle some activity.
+      description: >
+        Description of the _Top-level_ of _Session Policy_ type and the belonging _Plans_ that were executed to handle some activity.\
+
+        _Session Policies_ are employed for LOCAL, ROAMING, VoLTE, VoNR....
       properties:
         id:
           type: string
@@ -820,17 +777,17 @@ components:
           description: _Top-level_ _Specification_ identifier.
         eligibilityPlans:
           type: array
-          description: List of executed _Eligibility Plans_ from the _Top-level_ _Specification_.
+          description: Executed _Eligibility Plans_ from the _Top-level_ _Specification_.
           items:
             $ref: '#/components/schemas/EligibilityPlan'
         sessionPlans:
           type: array
-          description: List of executed _Session Plans_ from the _Top-level_ _Specification_.
+          description: Executed _Session Plans_ from the _Top-level_ _Specification_.
           items:
             $ref: '#/components/schemas/SessionPlan'
         notificationPlans:
           type: array
-          description: List of executed _Notification Plans_ from the _Top-level_ _Specification_.
+          description: Executed _Notification Plans_ from the _Top-level_ _Specification_.
           items:
             $ref: '#/components/schemas/NotificationPlan'
 
@@ -841,14 +798,12 @@ components:
         specId:
           type: string
           description:  _Plan_ _Specification_ identifier. 
-          example: 81455de9-46f8-4991-8f09-ff55eaa97039
         resultSpecId:
           type: string
           description: _Plan_ _Specification_ result identifier.
-          example: 47761961-08ec-40b3-807f-5777a5d92c33
     EligibilityPlan:
       type: object
-      description: Eligibility plan...
+      description: _Eligibility Plan_...
       properties:
         specId:
           type: string
@@ -858,11 +813,11 @@ components:
           description: _Plan_ _Specification_ result identifier.
     ServicePlan:
       type: object
-      description: Service plan...
+      description: _Service Plan_...
       properties:
         specId:
           type: string
-          description: Identification of the specification of the executed plan
+          description: _Specification_ identifier of the executed plan.
         resultSpecIds:
           type: array
           uniqueItems: true
@@ -888,7 +843,7 @@ components:
       properties:
         specId:
           type: string
-          description: Identification of the specification of the executed plan
+          description: _Specification_ identifier of the executed plan.
         resultSpecIds:
           type: array
           uniqueItems: true
@@ -939,6 +894,7 @@ components:
     
     Notification:
       type: object
+      description: Contents of a _Notification_ (e.g. SMS, email) along with the _Top-level_'s _Plan_ that activated the notication sending.
       required:
         - subject
       properties:
@@ -960,28 +916,28 @@ components:
           type: array
           items:
             type: string
-          description: List of destination addresses for the notification (emails or phone numbers).
+          description: Destination addresses for the _Notification_ (emails or phone numbers).
           examples:
           - "961234567"
         subject:
           type: string
-          description: Subject of the notification. <u>Only applicable</u> for email notifications.
+          description: Subject of the _Notification_. <u>Only applicable</u> for email _Notifications_.
         message:
           type: string
-          description: Content of the notification message.
+          description: Content of the _Notification_ message.
           examples: 
           - Insufficient balance. Please recharge. Thanks.
         publishTs:
           type: string
           format: utcz
-          description: Timestamp when the notification is published.
+          description: Timestamp when the _Notification_ was published.
         validityTs:
           type: string
           format: utcz
-          description: Timestamp indicating the validity of the notification message.
+          description: Timestamp indicating the validity of the _Notification_ message.
         dispatchPeriods:
           type: array
-          description: Periods during which the notification can be dispatched.
+          description: Periods during which the _Notification_ can be dispatched.
           minItems: 1
           items:
             type: object
