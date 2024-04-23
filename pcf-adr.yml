@@ -79,6 +79,7 @@ channels:
           - activityType
           - activitySubType
           - activityStartTs
+          - activityBusinessResult
           dependencies:
             activitySubType:
               oneOf:
@@ -252,6 +253,7 @@ channels:
               description: Business result of the reported activity.
               required:
               - code
+              - classification
               properties:
                 code:
                   type: string
@@ -423,7 +425,7 @@ components:
           description: >
             Channel system classification passed by parameter in the provision operation.
             <p>
-            _Note:_ The value <u>is not enforced</u>. The choice of how to use this is left to the provisioning external systems.
+            _Note:_ The value <u>is not validated</u>. The choice of how to use this is left to the provisioning external systems.
           examples:
           - Shop
         subChannel:
@@ -431,7 +433,7 @@ components:
           description: >
             Subchannel system classification passed by parameter in the provision operation.
             <p>
-            _Note:_ The value <u>is not enforced</u>. The choice of how to use this is left to the provisioning external systems.
+            _Note:_ The value <u>is not validated</u>. The choice of how to use this is left to the provisioning external systems.
           examples:
           - Web
         reason:
@@ -439,7 +441,7 @@ components:
           description: >
             Provisioning reason.
             <p>
-            _Note:_ The value <u>is not</u> enforced. The choice of how to use this is left to the provisioning external systems.
+            _Note:_ The value <u>is not</u> validated. The choice of how to use this is left to the provisioning external systems.
           required:
           - code
           properties:
@@ -471,7 +473,7 @@ components:
                 - Create
                 - Update
                 - Remove
-              type:
+              entityType:
                 type: string
                 description: Provisioned entity type.
                 enum:
