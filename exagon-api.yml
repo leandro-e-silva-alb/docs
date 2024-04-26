@@ -1,0 +1,74 @@
+asyncapi: 3.0.0
+id: urn:exagon
+info:
+  title: Exagon API
+  version: 5.0.0
+
+components:
+  schemas:
+    ExagonCollection:
+      type: object
+      additionalProperties: false
+      description: > 
+        Annotation used in entities for microservices.\
+        
+        Used to identify the name of the collection for this entity.
+      properties:
+        value:
+          type: string
+          description: >
+            Name of a collection for this event.
+            <p>
+            _Default_: The fully qualified name of the class, including the package name.
+          examples:
+          - pcf-adr
+    ExagonCommand:
+      type: object
+      additionalProperties: false
+      description: > 
+        Annotation used in commands for microservices.\
+        
+        It is imperative to annotate a command with this annotation.
+      properties:
+        value:
+          type: string
+          description: > 
+            Name of the address for this event.
+            <p>
+            _Default_: The simple name of the class.
+          examples:
+          - commands.VerifyRequest
+    ExagonNotification:
+      type: object
+      additionalProperties: false
+      description: > 
+        Annotation used in commands for microservices.\
+        
+        It is imperative to annotate a command with this annotation.
+      properties:
+        value:
+          type: string
+          description: >
+            Name of the address for this event.
+            <p>
+            _Default_: The simple name of the class.
+          examples:
+          - commands.VerifyRequest
+    ExagonChoreographyController:
+      additionalProperties: false
+      description: > 
+        An `ExagonChoreographyController` is a class that maps all events and a command for a certain method. Allowing Exagon architecture to choreography a new request to other subsystems. Those methods must be annotated with `ExagonEnvelopeAggregate`, and the class must be annotated with `ExagonChoreographyController`.
+    ExagonController:
+      additionalProperties: false
+      description: > 
+        An `ExagonController` is a class that maps all events and a command for a certain method. Each participant microservice must have at least one method, but can have more than one, that are expecting specific events to start processing. Since the exagon architecture is based on orchestration, those methods are also expecting one command from the orchestrator to start the process. This means that even if all the events have already arrived, the microservice is awaiting the trigger (command) from the orchestrator. Those methods must be annotated with `ExagonEnvelopeAggregate`, and the class must be annotated with `ExagonController`.
+    ExagonEnvelopeAggregate:
+      additionalProperties: false
+      description: > 
+        Every participant microservice must map events to start a process. Those methods must be annotated with this annotation, `ExagonEnvelopeAggregate`, and by definition, they are waiting for a trigger (command) to start processing. This annotation receives a class that is the expected command to trigger the start process.
+    ExagonProtocolMapper:
+      additionalProperties: false
+      description: ...
+    ExagonRepository:
+      additionalProperties: false
+      description: ...
