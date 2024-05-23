@@ -1,0 +1,15 @@
+com.alticelabs.ccp.exagon.api.annotations
+com.alticelabs.ccp.exagon.api.annotations.enums
+com.alticelabs.ccp.exagon.api.business_reply
+com.alticelabs.ccp.exagon.api.communication
+com.alticelabs.ccp.exagon.api.communication.models.configuration
+com.alticelabs.ccp.exagon.api.communication.models.producer
+com.alticelabs.ccp.exagon.api.communication.utils
+com.alticelabs.ccp.exagon.api.core
+com.alticelabs.ccp.exagon.api.exception
+com.alticelabs.ccp.exagon.api.protocol_mapper
+com.alticelabs.ccp.exagon.api.protocol_mapper.models
+com.alticelabs.ccp.exagon.api.workflow
+com.alticelabs.ccp.exagon.api.workflow.command
+com.alticelabs.ccp.exagon.api.workflow.status
+com.alticelabs.ccp.exagon.api.zombie_session
