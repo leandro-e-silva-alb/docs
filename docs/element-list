@@ -1,17 +1,6 @@
 api_b
-api_b.exception
 api_e
 api_e.configuration
-api_e.enums
-api_e.exception
-api_e.info
 api_f
 api_f.model
 api_p
-api_r
-api_r.exception
-api_r.local
-api_r.query
-api_r.state_transfer
-infra.enums
-infra.exception
