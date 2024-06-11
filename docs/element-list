@@ -18,9 +18,11 @@ com.alticelabs.ccp.exagon.api.repository.event_sourcing
 com.alticelabs.ccp.exagon.api.repository.event_sourcing.util
 com.alticelabs.ccp.exagon.api.repository.exception
 com.alticelabs.ccp.exagon.api.repository.local
+com.alticelabs.ccp.exagon.api.repository.parser
 com.alticelabs.ccp.exagon.api.repository.query
-com.alticelabs.ccp.exagon.api.rules
-com.alticelabs.ccp.exagon.api.rules.exception
+com.alticelabs.ccp.exagon.api.rule_executor
+com.alticelabs.ccp.exagon.api.rule_executor.exception
+com.alticelabs.ccp.exagon.api.rule_executor.models
 com.alticelabs.ccp.exagon.api.workflow
 com.alticelabs.ccp.exagon.api.workflow.command
 com.alticelabs.ccp.exagon.api.workflow.status
