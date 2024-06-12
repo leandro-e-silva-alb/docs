@@ -104,15 +104,9 @@ channels:
               - title: Policy ADR
                 properties:
                   activityType:
-                    const: "SMPolicyControl"
+                    const: "Policy"
                   activitySubType:
-                    enum: ['SMPolicyControl']
-              - title: PolicyAuthorization ADR
-                properties:
-                  activityType:
-                    const: "PolicyAuthorization"
-                  activitySubType:
-                    enum: ['PolicyAuthorization']
+                    enum: ['SMPolicyControl', 'PolicyAuthorization']
               - title: SpendingLimit ADR
                 properties:
                   activityType:
@@ -213,8 +207,7 @@ channels:
               enum:
                 - AccountManagement
                 - ProductManagement
-                - SMPolicyControl
-                - PolicyAuthorization
+                - Policy
                 - SpendingLimit
             activitySubType:
               type: string
@@ -224,6 +217,8 @@ channels:
                 - RemoveProduct
                 - CreditBucket
                 - DebitSlice
+                - SMPolicyControl
+                - PolicyAuthorization
             activityStartTs:
               type: string
               format: UTCZ
@@ -643,7 +638,7 @@ components:
           description: Timestamp of the moment the policies update was processed.
         duration:
           type: number
-          description: Duraction of this session portion in milliseconds.
+          description: Duration of this session portion in milliseconds.
         sessionPolicies:
           type: array
           description: >
@@ -704,7 +699,7 @@ components:
           description: Timestamp of the moment the policies update was processed.
         duration:
           type: number
-          description: Duraction of this session portion in milliseconds.
+          description: Duration of this session portion in milliseconds.
         authorizationPolicies:
           type: array
           description: >
