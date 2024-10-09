@@ -1,0 +1,218 @@
+asyncapi: 3.0.0
+info:
+  title: Exagon Entities
+  version: 1.0.0
+defaultContentType: application/json
+
+operations:
+  publishADR:
+    action: send
+    channel:
+      $ref: '#/channels/pcfADR'
+
+channels:
+  pcfADR:
+    address: pcfADR
+    messages:
+      ExagonCommand:
+        $ref: '#/components/messages/ExagonCommand'
+        title: Activity Data Record
+        summary: An information record about an activity performed in the system for a user equipment (UE) - a device used directly by an end-user to communicate.
+        description: >
+          <details>
+          <summary><u>ADR and LDR context:</u></summary>
+          <b>LDR (Local Data Record)</b> is a local record created by an activity that occurs in the system with all the information arising from that activity. Con
+          </details>
+      ExagonNotification:
+        $ref: '#/components/messages/ExagonNotification'
+      
+      
+
+
+components:
+  messages:
+    ExagonCommand:
+      headers:
+        "$ref": "#/components/schemas/ExagonCommandHeaders"
+      payload:
+        "$ref": "#/components/schemas/emptyPayload"
+    ExagonNotification:
+      headers:
+        "$ref": "#/components/schemas/ExagonNotificationHeaders"
+      payload:
+        "$ref": "#/components/schemas/businessPayload"
+    ExagonStatus:
+      headers:
+        "$ref": "#/components/schemas/ExagonStatusHeaders"
+      payload:
+        "$ref": "#/components/schemas/mapToBusinessStatus"
+    ExagonEvent:
+      headers:
+        "$ref": "#/components/schemas/emptyHeader"
+      payload:
+        "$ref": "#/components/schemas/EventEnvelopePayload"
+    ExagonSnapshot:
+      headers:
+        "$ref": "#/components/schemas/emptyHeader"
+      payload:
+        "$ref": "#/components/schemas/SnapshotEnvelopePayload"
+    IsolationReference:
+      headers:
+        "$ref": "#/components/schemas/emptyHeader"
+      payload:
+        "$ref": "#/components/schemas/isolationReferencePayload"
+    SagaStarted:
+      headers:
+        "$ref": "#/components/schemas/emptyHeader"
+      payload:
+        "$ref": "#/components/schemas/SagaStartedPayload"
+    SagaFinished:
+      headers:
+        "$ref": "#/components/schemas/emptyHeader"
+      payload:
+        "$ref": "#/components/schemas/emptyPayload"
+    SagaRollback:
+      headers:
+        "$ref": "#/components/schemas/emptyHeader"
+      payload:
+        "$ref": "#/components/schemas/emptyPayload"
+  schemas:
+    ExagonCommandHeaders:
+      type: object
+      contentType: application/json
+      properties:
+        status-Address:
+          type: string
+        workflow-Step-Identifier:
+          type: string
+        command-Qualifier:
+          type: string
+        saga-Started:
+          type: string
+          format: date-time
+        produced-Timestamp:
+          type: string
+          format: date-time
+        arguments:
+          type: string
+    ExagonNotificationHeaders:
+      type: object
+      contentType: application/json
+      properties:
+        produced-Timestamp:
+          type: string
+          format: date-time
+        command-Qualifier:
+          type: string
+    ExagonStatusHeaders:
+      type: object
+      contentType: application/json
+      properties:
+        workflow-Step-Identifier:
+          type: string
+        status-Address:
+          type: string
+        command-Qualifier:
+          type: string
+        saga-Started:
+          type: string
+          format: date-time
+        produced-Timestamp:
+          type: string
+          format: date-time
+        internal-Error:
+          type: boolean
+          default: false
+        after-PoNR:
+          type: boolean
+          default: false
+        error-Status:
+          type: boolean
+          default: false
+        network-Reply:
+          type: boolean
+          default: false
+        handled-By-Other-Pod:
+          type: boolean
+          default: false
+        timeout:
+          type: boolean
+          default: false
+        rollback:
+          type: boolean
+          default: false
+    businessPayload:
+      type: object
+      contentType: application/json
+      properties:
+        event:
+          type: object
+    emptyPayload:
+      type: object
+      contentType: application/json
+    emptyHeader:
+      type: object
+      contentType: application/json
+    mapToBusinessStatus:
+      type: object
+      contentType: application/json
+    isolationReferencePayload:
+      type: object
+      properties:
+        tsRead:
+          type: string
+          format: date-time
+        tsWrite:
+          type: string
+          format: date-time
+        tsEventReference:
+          type: string
+          format: date-time
+    EventEnvelopePayload:
+      type: object
+      properties:
+        sagaId:
+          type: string
+        entityId:
+          type: string
+        tsWrite:
+          type: string
+          format: date-time
+        tsReference:
+          type: string
+          format: date-time
+        event:
+          type: object
+        rollback:
+          type: boolean
+          default: false
+    SnapshotEnvelopePayload:
+      type: object
+      properties:
+        sagaId:
+          type: string
+        entityId:
+          type: string
+        entity:
+          type: object
+        tsWrite:
+          type: string
+          format: date-time
+        tsReference:
+          type: string
+          format: date-time
+        creationDate:
+          type: string
+          format: date-time
+        removeDate:
+          type: string
+          format: date-time
+    SagaStartedPayload:
+      type: object
+      properties:
+        tsEventReference:
+          type: string
+          format: date-time
+        sagaTimeout:
+          type: string
+          format: date-time
