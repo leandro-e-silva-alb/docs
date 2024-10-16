@@ -1,75 +1,141 @@
 asyncapi: 3.0.0
 info:
-  title: Exagon Entities
-  version: 1.0.0
+  title: Exagon Kafka Messages
+  version: 5.x
 defaultContentType: application/json
 
+operations:
+  SendExagonCommand:
+    action: send
+    channel:
+      $ref: '#/channels/ExagonCommand'
+  SendExagonNotification:
+    action: send
+    channel:
+      $ref: '#/channels/ExagonNotification'
+  SendExagonStatus:
+    action: send
+    channel:
+      $ref: '#/channels/ExagonStatus'
+  SendExagonEvent:
+    action: send
+    channel:
+      $ref: '#/channels/ExagonEvent'
+  SendExagonSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/ExagonSnapshot'
+  SendIsolationReference:
+    action: send
+    channel:
+      $ref: '#/channels/IsolationReference'
+  SendSagaStarted:
+    action: send
+    channel:
+      $ref: '#/channels/SagaStarted'
+  SendSagaFinished:
+    action: send
+    channel:
+      $ref: '#/channels/SagaFinished'
+  SendSagaRollback:
+    action: send
+    channel:
+      $ref: '#/channels/SagaRollback'
 
 channels:
-  pcfADR:
-    address: pcfADR
+  ExagonCommand:
+    address: command.{name}
     messages:
       ExagonCommand:
         $ref: '#/components/messages/ExagonCommand'
-        title: Activity Data Record
-        summary: An information record about an activity performed in the system for a user equipment (UE) - a device used directly by an end-user to communicate.
-        description: >
-          <details>
-          <summary><u>ADR and LDR context:</u></summary>
-          <b>LDR (Local Data Record)</b> is a local record created by an activity that occurs in the system with all the information arising from that activity. Con
-          </details>
+  ExagonNotification:
+    address: notification.{name}
+    messages:
       ExagonNotification:
         $ref: '#/components/messages/ExagonNotification'
-      
+  ExagonStatus:
+    address: com.alticelabs.ccp.pcf.{workflowPath}
+    messages:
+      ExagonStatus:
+        $ref: '#/components/messages/ExagonStatus'
+  ExagonEvent:
+    address: ???????
+    messages:
+      ExagonEvent:
+        $ref: '#/components/messages/ExagonEvent'
+  ExagonSnapshot:
+    address: ?????????
+    messages:
+      ExagonSnapshot:
+        $ref: '#/components/messages/ExagonSnapshot'
+  IsolationReference:
+    address: com.alticelabs.ccp.exagon.infra_lib.isolation_manager.models.IsolationReference
+    messages:
+      ExagonIsolationReference:
+        $ref: '#/components/messages/IsolationReference'
+  SagaStarted:
+    address: com.alticelabs.ccp.exagon.infra_lib.task_coordinator.saga.models.SagaStarted
+    messages:
+      SagaStarted:
+        $ref: '#/components/messages/SagaStarted'
+  SagaFinished:
+    address: com.alticelabs.ccp.exagon.infra_lib.task_coordinator.saga.models.SagaFinished
+    messages:
+      SagaFinished:
+        $ref: '#/components/messages/SagaFinished'
+  SagaRollback:
+    address: com.alticelabs.ccp.exagon.infra_lib.task_coordinator.saga.models.SagaRollback
+    messages:
+      SagaRollback:
+        $ref: '#/components/messages/SagaRollback' 
 
 
 components:
   messages:
     ExagonCommand:
       headers:
-        "$ref": "#/components/schemas/ExagonCommandHeaders"
+        $ref: "#/components/schemas/ExagonCommandHeaders"
       payload:
-        "$ref": "#/components/schemas/emptyPayload"
+        type: object
+        description: The transported business command.
     ExagonNotification:
+      tags: 
+      - name: userSignUp
+        description: some message related to user signup
       headers:
-        "$ref": "#/components/schemas/ExagonNotificationHeaders"
+        $ref: "#/components/schemas/ExagonNotificationHeaders"
       payload:
-        "$ref": "#/components/schemas/businessPayload"
+        type: object
+        description: The transported business notification.
     ExagonStatus:
       headers:
-        "$ref": "#/components/schemas/ExagonStatusHeaders"
+        $ref: "#/components/schemas/ExagonStatusHeaders"
       payload:
-        "$ref": "#/components/schemas/mapToBusinessStatus"
+        type: object
+        description: The transported business status.
     ExagonEvent:
-      headers:
-        "$ref": "#/components/schemas/emptyHeader"
       payload:
-        "$ref": "#/components/schemas/EventEnvelopePayload"
+        $ref: "#/components/schemas/EventPayload"
     ExagonSnapshot:
-      headers:
-        "$ref": "#/components/schemas/emptyHeader"
       payload:
-        "$ref": "#/components/schemas/SnapshotEnvelopePayload"
+        $ref: "#/components/schemas/SnapshotPayload"
     IsolationReference:
-      headers:
-        "$ref": "#/components/schemas/emptyHeader"
       payload:
-        "$ref": "#/components/schemas/isolationReferencePayload"
+        $ref: "#/components/schemas/IsolationReferencePayload"
     SagaStarted:
-      headers:
-        "$ref": "#/components/schemas/emptyHeader"
       payload:
-        "$ref": "#/components/schemas/SagaStartedPayload"
+        $ref: "#/components/schemas/SagaStartedPayload"
     SagaFinished:
-      headers:
-        "$ref": "#/components/schemas/emptyHeader"
       payload:
-        "$ref": "#/components/schemas/emptyPayload"
+        type: object
+        additionalProperties: false
+        description: _Empty payload_.
     SagaRollback:
-      headers:
-        "$ref": "#/components/schemas/emptyHeader"
       payload:
-        "$ref": "#/components/schemas/emptyPayload"
+        type: object
+        additionalProperties: false
+        description: _Empty payload_.
+  
   schemas:
     ExagonCommandHeaders:
       type: object
@@ -81,14 +147,17 @@ components:
           type: string
         command-Qualifier:
           type: string
-        saga-Started:
+        saga-Started-Timestamp:
           type: string
           format: date-time
         produced-Timestamp:
           type: string
           format: date-time
-        arguments:
+        polymorphic-Arguments:
           type: string
+        is-After-Ponr:
+          type: string
+          $comment: ''
     ExagonNotificationHeaders:
       type: object
       contentType: application/json
@@ -96,8 +165,6 @@ components:
         produced-Timestamp:
           type: string
           format: date-time
-        command-Qualifier:
-          type: string
     ExagonStatusHeaders:
       type: object
       contentType: application/json
@@ -108,49 +175,21 @@ components:
           type: string
         command-Qualifier:
           type: string
-        saga-Started:
+        saga-Started-Timestamp:
           type: string
           format: date-time
-        produced-Timestamp:
+        is-Produced-Timestamp:
           type: string
           format: date-time
-        internal-Error:
+        is-After-PoNR:
           type: boolean
           default: false
-        after-PoNR:
+        is-Error-Status:
           type: boolean
           default: false
-        error-Status:
-          type: boolean
-          default: false
-        network-Reply:
-          type: boolean
-          default: false
-        handled-By-Other-Pod:
-          type: boolean
-          default: false
-        timeout:
-          type: boolean
-          default: false
-        rollback:
-          type: boolean
-          default: false
-    businessPayload:
-      type: object
-      contentType: application/json
-      properties:
-        event:
-          type: object
-    emptyPayload:
-      type: object
-      contentType: application/json
-    emptyHeader:
-      type: object
-      contentType: application/json
-    mapToBusinessStatus:
-      type: object
-      contentType: application/json
-    isolationReferencePayload:
+          description: indica se ouve uma exceção na invocação do método
+
+    IsolationReferencePayload:
       type: object
       properties:
         tsRead:
@@ -162,7 +201,7 @@ components:
         tsEventReference:
           type: string
           format: date-time
-    EventEnvelopePayload:
+    EventPayload:
       type: object
       properties:
         sagaId:
@@ -180,7 +219,7 @@ components:
         rollback:
           type: boolean
           default: false
-    SnapshotEnvelopePayload:
+    SnapshotPayload:
       type: object
       properties:
         sagaId:
