@@ -4,11 +4,6 @@ info:
   version: 1.0.0
 defaultContentType: application/json
 
-operations:
-  publishADR:
-    action: send
-    channel:
-      $ref: '#/channels/pcfADR'
 
 channels:
   pcfADR:
@@ -25,7 +20,6 @@ channels:
           </details>
       ExagonNotification:
         $ref: '#/components/messages/ExagonNotification'
-      
       
 
 
