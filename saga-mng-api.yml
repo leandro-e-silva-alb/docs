@@ -1,0 +1,105 @@
+swagger: "2.0"
+info:
+  description: "API para gestão de sagas no sistema. Inclui operações para obter sagas paradas ou com erros, removê-las de filas mortas e reiniciá-las."
+  version: "1.0.0"
+  title: "Saga Management API"
+
+host: "api.example.com"
+basePath: "/v1"
+schemes:
+  - "https"
+
+paths:
+  /sagas/stucked:
+    get:
+      summary: "Obter todas as sagas paradas"
+      description: "Retorna todas as sagas que estão no estado 'PARADA', incluindo o sagaId e o FlowStep onde ficaram paradas."
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "Lista de sagas paradas"
+          schema:
+            type: "array"
+            items:
+              type: "object"
+              properties:
+                sagaId:
+                  type: "string"
+                flowStep:
+                  type: "string"
+
+  /sagas/errors:
+    get:
+      summary: "Obter todas as sagas com erros"
+      description: "Retorna todas as sagas que estão no estado 'ERROR', incluindo o sagaId e o FlowStep onde ocorreu o erro."
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "Lista de sagas com erros"
+          schema:
+            type: "array"
+            items:
+              type: "object"
+              properties:
+                sagaId:
+                  type: "string"
+                flowStep:
+                  type: "string"
+
+  /sagas/{sagaId}/stucked:
+    delete:
+      summary: "Remover saga parada da DeadLetterQueue"
+      description: "Remove uma saga da DeadLetterQueue que está no estado 'PARADA' a partir do sagaId."
+      parameters:
+        - name: "sagaId"
+          in: "path"
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "Saga removida com sucesso"
+        404:
+          description: "Saga não encontrada"
+
+  /sagas/{sagaId}/error:
+    delete:
+      summary: "Remover saga com erro da DeadLetterQueue"
+      description: "Remove uma saga da DeadLetterQueue que está no estado 'ERROR' a partir do sagaId."
+      parameters:
+        - name: "sagaId"
+          in: "path"
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "Saga removida com sucesso"
+        404:
+          description: "Saga não encontrada"
+
+  /sagas/restart:
+    post:
+      summary: "Reiniciar uma saga"
+      description: "Reinicia uma saga específica a partir do sagaId e do FlowStep informado."
+      consumes:
+        - "application/json"
+      parameters:
+        - name: "body"
+          in: "body"
+          required: true
+          schema:
+            type: "object"
+            required:
+              - sagaId
+              - flowStep
+            properties:
+              sagaId:
+                type: "string"
+              flowStep:
+                type: "string"
+      responses:
+        200:
+          description: "Saga reiniciada com sucesso"
+        404:
+          description: "Saga não encontrada"
