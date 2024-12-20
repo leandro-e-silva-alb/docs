@@ -1,105 +1,504 @@
-swagger: "2.0"
+openapi: 3.0.0
 info:
-  description: "API para gestão de sagas no sistema. Inclui operações para obter sagas paradas ou com erros, removê-las de filas mortas e reiniciá-las."
   version: "1.0.0"
   title: "Saga Management API"
-
-host: "api.example.com"
-basePath: "/v1"
-schemes:
-  - "https"
-
+  description: "API management operations on sagas"
 paths:
-  /sagas/stucked:
+  /saga:
     get:
-      summary: "Obter todas as sagas paradas"
-      description: "Retorna todas as sagas que estão no estado 'PARADA', incluindo o sagaId e o FlowStep onde ficaram paradas."
-      produces:
-        - "application/json"
+      tags:
+        - saga
+      summary: "List sagas"
+      description: |
+        Filter and list sagas on specific state: 
+        
+          STUCK - sagas not finished within the limit time after PONR
+          
+          ERROR - sagas failed with error after PONR
+      operationId: listSagas
+      parameters:
+        - name: id
+          description: filter by id
+          required: false
+          in: query
+          schema:
+            type: string
+            example: 78f5f9d2-3a50-47e4-bb16-ce0c3e53a8a2 
+        - name: state
+          description: filter by saga internal state 
+          required: true
+          in: query
+          schema:
+            type: string
+            example: STUCK
+            enum:
+            - STUCK
+            - ERROR
+        - name: flow
+          description: filter by saga flow (i.e., smpolicy-orchestrator)
+          required: false
+          in: query
+          schema:
+            type: string 
+          example: smpolicy-orchestrator
+        - name: minReferenceTs
+          description: filter by saga minimum reference ts
+          required: false
+          in: query
+          schema:
+            type: string 
+            format: date-time
+          example: 2024-12-17T09:12:28Z
+        - name: maxReferenceTs
+          description: filter by saga maximum reference ts
+          required: false
+          in: query
+          schema:
+            type: string 
+            format: date-time
+          example: 2024-12-27T09:12:28Z
+        - name: count
+          description: define if it will be returned the total number of items matching criteria
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: offset
+          in: query
+          description: The number of items to skip
+          example: 0
+          schema:
+            type: integer
+            minimum: 0
+          required: false
+        - name: limit
+          in: query
+          description: The maximum number of items to return
+          example: 40
+          schema:
+            type: integer
+            minimum: 1
+          required: false
       responses:
         200:
-          description: "Lista de sagas paradas"
-          schema:
-            type: "array"
-            items:
-              type: "object"
-              properties:
-                sagaId:
-                  type: "string"
-                flowStep:
-                  type: "string"
-
-  /sagas/errors:
+          description: "Success"
+          headers:
+            X-Result-Count:
+              description: The number of items returned in the response body
+              schema:
+                type: integer
+            X-Total-Count:
+              description: Total number of items matching criteria
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Saga_Retrieve'
+        400:
+          $ref: '#/components/responses/response-400'
+        404:
+          $ref: '#/components/responses/response-404'
+        422:
+          $ref: '#/components/responses/response-422'
+        500:
+          $ref: '#/components/responses/response-500'
+        504:
+          $ref: '#/components/responses/response-504'
+  /saga/stuck:
     get:
-      summary: "Obter todas as sagas com erros"
-      description: "Retorna todas as sagas que estão no estado 'ERROR', incluindo o sagaId e o FlowStep onde ocorreu o erro."
-      produces:
-        - "application/json"
-      responses:
-        200:
-          description: "Lista de sagas com erros"
+      tags:
+        - saga
+      summary: "List stuck sagas"
+      description: |
+        Filter and list stuck sagas 
+
+      operationId: listStuckSagas
+      parameters:
+        - name: id
+          description: filter by id
+          required: false
+          in: query
           schema:
-            type: "array"
-            items:
-              type: "object"
-              properties:
-                sagaId:
-                  type: "string"
-                flowStep:
-                  type: "string"
-
-  /sagas/{sagaId}/stucked:
-    delete:
-      summary: "Remover saga parada da DeadLetterQueue"
-      description: "Remove uma saga da DeadLetterQueue que está no estado 'PARADA' a partir do sagaId."
-      parameters:
-        - name: "sagaId"
-          in: "path"
-          required: true
-          type: "string"
+            type: string
+            example: 78f5f9d2-3a50-47e4-bb16-ce0c3e53a8a2 
+        - name: flow
+          description: filter by saga flow (i.e., smpolicy-orchestrator)
+          required: false
+          in: query
+          schema:
+            type: string 
+          example: smpolicy-orchestrator
+        - name: minReferenceTs
+          description: filter by saga minimum reference ts
+          required: false
+          in: query
+          schema:
+            type: string 
+            format: date-time
+          example: 2024-12-17T09:12:28Z
+        - name: maxReferenceTs
+          description: filter by saga maximum reference ts
+          required: false
+          in: query
+          schema:
+            type: string 
+            format: date-time
+          example: 2024-12-27T09:12:28Z
+        - name: count
+          description: define if it will be returned the total number of items matching criteria
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: offset
+          in: query
+          description: The number of items to skip
+          example: 0
+          schema:
+            type: integer
+            minimum: 0
+          required: false
+        - name: limit
+          in: query
+          description: The maximum number of items to return
+          example: 40
+          schema:
+            type: integer
+            minimum: 1
+          required: false
       responses:
         200:
-          description: "Saga removida com sucesso"
+          description: "Success"
+          headers:
+            X-Result-Count:
+              description: The number of items returned in the response body
+              schema:
+                type: integer
+            X-Total-Count:
+              description: Total number of items matching criteria
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Saga_Retrieve'
+        400:
+          $ref: '#/components/responses/response-400'
         404:
-          description: "Saga não encontrada"
+          $ref: '#/components/responses/response-404'
+        422:
+          $ref: '#/components/responses/response-422'
+        500:
+          $ref: '#/components/responses/response-500'
+        504:
+          $ref: '#/components/responses/response-504'
+  /saga/error:
+    get:
+      tags:
+        - saga
+      summary: "List sagas on error"
+      description: |
+        Filter and list sagas on error state: 
 
-  /sagas/{sagaId}/error:
-    delete:
-      summary: "Remover saga com erro da DeadLetterQueue"
-      description: "Remove uma saga da DeadLetterQueue que está no estado 'ERROR' a partir do sagaId."
+      operationId: listErrorSagas
       parameters:
-        - name: "sagaId"
-          in: "path"
-          required: true
-          type: "string"
+        - name: id
+          description: filter by id
+          required: false
+          in: query
+          schema:
+            type: string
+            example: 78f5f9d2-3a50-47e4-bb16-ce0c3e53a8a2 
+        - name: flow
+          description: filter by saga flow (i.e., smpolicy-orchestrator)
+          required: false
+          in: query
+          schema:
+            type: string 
+          example: smpolicy-orchestrator
+        - name: minReferenceTs
+          description: filter by saga minimum reference ts
+          required: false
+          in: query
+          schema:
+            type: string 
+            format: date-time
+          example: 2024-12-17T09:12:28Z
+        - name: maxReferenceTs
+          description: filter by saga maximum reference ts
+          required: false
+          in: query
+          schema:
+            type: string 
+            format: date-time
+          example: 2024-12-27T09:12:28Z
+        - name: count
+          description: define if it will be returned the total number of items matching criteria
+          required: false
+          in: query
+          schema:
+            type: boolean
+        - name: offset
+          in: query
+          description: The number of items to skip
+          example: 0
+          schema:
+            type: integer
+            minimum: 0
+          required: false
+        - name: limit
+          in: query
+          description: The maximum number of items to return
+          example: 40
+          schema:
+            type: integer
+            minimum: 1
+          required: false
       responses:
         200:
-          description: "Saga removida com sucesso"
+          description: "Success"
+          headers:
+            X-Result-Count:
+              description: The number of items returned in the response body
+              schema:
+                type: integer
+            X-Total-Count:
+              description: Total number of items matching criteria
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Saga_Retrieve'
+        400:
+          $ref: '#/components/responses/response-400'
         404:
-          description: "Saga não encontrada"
-
-  /sagas/restart:
+          $ref: '#/components/responses/response-404'
+        422:
+          $ref: '#/components/responses/response-422'
+        500:
+          $ref: '#/components/responses/response-500'
+        504:
+          $ref: '#/components/responses/response-504'
+  /saga/{id}:
+    get:
+      tags:
+        - saga
+      summary: Retrieves a saga 
+      description: Retrieves a saga information state
+      operationId: retrieveSaga
+      parameters:
+        - name: id
+          in: path
+          description: Saga identifier
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Saga_Retrieve'
+        400:
+          $ref: '#/components/responses/response-400'
+        404:
+          $ref: '#/components/responses/response-404'
+        409:
+          $ref: '#/components/responses/response-409'
+        422:
+          $ref: '#/components/responses/response-422'
+        500:
+          $ref: '#/components/responses/response-500'
+        504:
+          $ref: '#/components/responses/response-504'
+    delete:
+      tags:
+        - saga
+      summary: Delete a saga 
+      description: Delete a saga  
+      operationId: deleteSaga
+      parameters:
+        - name: id
+          in: path
+          description: Saga identifier
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Success
+        400:
+          $ref: '#/components/responses/response-400'
+        404:
+          $ref: '#/components/responses/response-404'
+        409:
+          $ref: '#/components/responses/response-409'
+        422:
+          $ref: '#/components/responses/response-422'
+        500:
+          $ref: '#/components/responses/response-500'
+        504:
+          $ref: '#/components/responses/response-504'
+  /saga/{id}/resume:
     post:
-      summary: "Reiniciar uma saga"
-      description: "Reinicia uma saga específica a partir do sagaId e do FlowStep informado."
-      consumes:
-        - "application/json"
+      tags:
+        - saga
+      summary: "Resume saga"
+      description: |
+        Resume blocked saga in error state.
+        
+        If not in a allowed state, should return conflict error
+      operationId: resumeSaga
       parameters:
-        - name: "body"
-          in: "body"
+        - name: "id"
+          in: "path"
           required: true
           schema:
-            type: "object"
-            required:
-              - sagaId
-              - flowStep
-            properties:
-              sagaId:
-                type: "string"
-              flowStep:
-                type: "string"
+            type: "string"
       responses:
         200:
-          description: "Saga reiniciada com sucesso"
+          description: Success
+        400:
+          $ref: '#/components/responses/response-400'
         404:
-          description: "Saga não encontrada"
+          $ref: '#/components/responses/response-404'
+        409:
+          $ref: '#/components/responses/response-409'
+        422:
+          $ref: '#/components/responses/response-422'
+        500:
+          $ref: '#/components/responses/response-500'
+        504:
+          $ref: '#/components/responses/response-504'
+  /saga/{id}/skip:
+    post:
+      tags:
+        - saga
+      summary: "Skip step and resume saga"
+      description: |
+        Skip step (command) and resume blocked saga in error state.
+        
+        If not in a allowed state, should return conflict error
+      operationId: skipCommand
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: Success
+        400:
+          $ref: '#/components/responses/response-400'
+        404:
+          $ref: '#/components/responses/response-404'
+        409:
+          $ref: '#/components/responses/response-409'
+        422:
+          $ref: '#/components/responses/response-422'
+        500:
+          $ref: '#/components/responses/response-500'
+        504:
+          $ref: '#/components/responses/response-504'
+components:
+  schemas:
+    Saga_Retrieve:
+      required:
+        - id
+      type: object
+      properties:
+        id:
+          type: string
+          description: saga identifier
+          example: 79a4bfe0-976c-4233-b8f4-b21126cddb86
+        referenceTs:
+          type: string
+          format: date-time
+          description: saga reference timestamp
+          example: 2024-12-17T09:12:28Z
+        flow:
+          type: string
+          description: saga flow origin
+          example: smpolicy-orchestrator
+        state:
+          description: saga internal state
+          type: string
+        command:
+          type: string
+          description: command identifier
+        errorReason:
+          type: string
+          description: reason error 
+          example: exception
+        errorMessage:
+          type: string
+          description: saga error message. When
+          example: NullPointerException
+    Error:
+      required:
+        - code
+        - reason
+      type: object
+      properties:
+        code:
+          type: string
+          description: System error code
+          example: SYSTEM_ERROR
+        reason:
+          type: string
+          description: Explanation of the reason for the error which can be shown to a client user.
+          example: reason information
+        details:
+          type: string
+          description: Specific details related to the cause of the error
+          example: Specific details of the error
+      description: API error information
+  responses:
+    response-400:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    response-404:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    response-409:
+      description: Conflict State
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    response-422:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    response-500:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    response-504:
+      description: Gateway Timeout
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'      
+      
